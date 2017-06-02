@@ -13,9 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Azure.Management.Storsimple8000series">
-      <HintPath>..\Management.StorSimple8000Series\bin\Debug\netstandard1.4\Microsoft.Azure.Management.Storsimple8000series.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\Management.StorSimple8000Series\Microsoft.Azure.Management.StorSimple8000series.csproj" />
   </ItemGroup>
 
   <ItemGroup>
