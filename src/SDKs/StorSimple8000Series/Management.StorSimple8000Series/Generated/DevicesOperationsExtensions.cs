@@ -116,6 +116,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
             /// </param>
@@ -127,9 +130,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// or $expand=rolloverdetails to populate additional fields related to the
             /// service data encryption key rollover on device
             /// </param>
-            public static Device Get(this IDevicesOperations operations, string resourceGroupName, string managerName, string expand = default(string))
+            public static Device Get(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName, string expand = default(string))
             {
-                return operations.GetAsync(resourceGroupName, managerName, expand).GetAwaiter().GetResult();
+                return operations.GetAsync(deviceName, resourceGroupName, managerName, expand).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -138,6 +141,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
             /// </param>
@@ -152,9 +158,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task<Device> GetAsync(this IDevicesOperations operations, string resourceGroupName, string managerName, string expand = default(string), CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task<Device> GetAsync(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName, string expand = default(string), CancellationToken cancellationToken = default(CancellationToken))
             {
-                using (var _result = await operations.GetWithHttpMessagesAsync(resourceGroupName, managerName, expand, null, cancellationToken).ConfigureAwait(false))
+                using (var _result = await operations.GetWithHttpMessagesAsync(deviceName, resourceGroupName, managerName, expand, null, cancellationToken).ConfigureAwait(false))
                 {
                     return _result.Body;
                 }
@@ -166,15 +172,18 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
             /// </param>
             /// <param name='managerName'>
             /// The manager name
             /// </param>
-            public static void Delete(this IDevicesOperations operations, string resourceGroupName, string managerName)
+            public static void Delete(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName)
             {
-                operations.DeleteAsync(resourceGroupName, managerName).GetAwaiter().GetResult();
+                operations.DeleteAsync(deviceName, resourceGroupName, managerName).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -183,48 +192,8 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
-            /// <param name='resourceGroupName'>
-            /// The resource group name
-            /// </param>
-            /// <param name='managerName'>
-            /// The manager name
-            /// </param>
-            /// <param name='cancellationToken'>
-            /// The cancellation token.
-            /// </param>
-            public static async Task DeleteAsync(this IDevicesOperations operations, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
-            {
-                await operations.DeleteWithHttpMessagesAsync(resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
-            }
-
-            /// <summary>
-            /// Patches the device.
-            /// </summary>
-            /// <param name='operations'>
-            /// The operations group for this extension method.
-            /// </param>
-            /// <param name='parameters'>
-            /// Patch representation of the device.
-            /// </param>
-            /// <param name='resourceGroupName'>
-            /// The resource group name
-            /// </param>
-            /// <param name='managerName'>
-            /// The manager name
-            /// </param>
-            public static Device Update(this IDevicesOperations operations, DevicePatch parameters, string resourceGroupName, string managerName)
-            {
-                return operations.UpdateAsync(parameters, resourceGroupName, managerName).GetAwaiter().GetResult();
-            }
-
-            /// <summary>
-            /// Patches the device.
-            /// </summary>
-            /// <param name='operations'>
-            /// The operations group for this extension method.
-            /// </param>
-            /// <param name='parameters'>
-            /// Patch representation of the device.
+            /// <param name='deviceName'>
+            /// The device name
             /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
@@ -235,9 +204,58 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task<Device> UpdateAsync(this IDevicesOperations operations, DevicePatch parameters, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task DeleteAsync(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
-                using (var _result = await operations.UpdateWithHttpMessagesAsync(parameters, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false))
+                await operations.DeleteWithHttpMessagesAsync(deviceName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
+            }
+
+            /// <summary>
+            /// Patches the device.
+            /// </summary>
+            /// <param name='operations'>
+            /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
+            /// <param name='parameters'>
+            /// Patch representation of the device.
+            /// </param>
+            /// <param name='resourceGroupName'>
+            /// The resource group name
+            /// </param>
+            /// <param name='managerName'>
+            /// The manager name
+            /// </param>
+            public static Device Update(this IDevicesOperations operations, string deviceName, DevicePatch parameters, string resourceGroupName, string managerName)
+            {
+                return operations.UpdateAsync(deviceName, parameters, resourceGroupName, managerName).GetAwaiter().GetResult();
+            }
+
+            /// <summary>
+            /// Patches the device.
+            /// </summary>
+            /// <param name='operations'>
+            /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
+            /// <param name='parameters'>
+            /// Patch representation of the device.
+            /// </param>
+            /// <param name='resourceGroupName'>
+            /// The resource group name
+            /// </param>
+            /// <param name='managerName'>
+            /// The manager name
+            /// </param>
+            /// <param name='cancellationToken'>
+            /// The cancellation token.
+            /// </param>
+            public static async Task<Device> UpdateAsync(this IDevicesOperations operations, string deviceName, DevicePatch parameters, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            {
+                using (var _result = await operations.UpdateWithHttpMessagesAsync(deviceName, parameters, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false))
                 {
                     return _result.Body;
                 }
@@ -249,15 +267,18 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
             /// </param>
             /// <param name='managerName'>
             /// The manager name
             /// </param>
-            public static void AuthorizeForServiceEncryptionKeyRollover(this IDevicesOperations operations, string resourceGroupName, string managerName)
+            public static void AuthorizeForServiceEncryptionKeyRollover(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName)
             {
-                operations.AuthorizeForServiceEncryptionKeyRolloverAsync(resourceGroupName, managerName).GetAwaiter().GetResult();
+                operations.AuthorizeForServiceEncryptionKeyRolloverAsync(deviceName, resourceGroupName, managerName).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -266,6 +287,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
             /// </param>
@@ -275,9 +299,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task AuthorizeForServiceEncryptionKeyRolloverAsync(this IDevicesOperations operations, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task AuthorizeForServiceEncryptionKeyRolloverAsync(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
-                await operations.AuthorizeForServiceEncryptionKeyRolloverWithHttpMessagesAsync(resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
+                await operations.AuthorizeForServiceEncryptionKeyRolloverWithHttpMessagesAsync(deviceName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
             }
 
             /// <summary>
@@ -286,15 +310,18 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
             /// </param>
             /// <param name='managerName'>
             /// The manager name
             /// </param>
-            public static void Deactivate(this IDevicesOperations operations, string resourceGroupName, string managerName)
+            public static void Deactivate(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName)
             {
-                operations.DeactivateAsync(resourceGroupName, managerName).GetAwaiter().GetResult();
+                operations.DeactivateAsync(deviceName, resourceGroupName, managerName).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -303,42 +330,8 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
-            /// <param name='resourceGroupName'>
-            /// The resource group name
-            /// </param>
-            /// <param name='managerName'>
-            /// The manager name
-            /// </param>
-            /// <param name='cancellationToken'>
-            /// The cancellation token.
-            /// </param>
-            public static async Task DeactivateAsync(this IDevicesOperations operations, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
-            {
-                await operations.DeactivateWithHttpMessagesAsync(resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
-            }
-
-            /// <summary>
-            /// Downloads and installs the updates on the device.
-            /// </summary>
-            /// <param name='operations'>
-            /// The operations group for this extension method.
-            /// </param>
-            /// <param name='resourceGroupName'>
-            /// The resource group name
-            /// </param>
-            /// <param name='managerName'>
-            /// The manager name
-            /// </param>
-            public static void InstallUpdates(this IDevicesOperations operations, string resourceGroupName, string managerName)
-            {
-                operations.InstallUpdatesAsync(resourceGroupName, managerName).GetAwaiter().GetResult();
-            }
-
-            /// <summary>
-            /// Downloads and installs the updates on the device.
-            /// </summary>
-            /// <param name='operations'>
-            /// The operations group for this extension method.
+            /// <param name='deviceName'>
+            /// The device name
             /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
@@ -349,9 +342,52 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task InstallUpdatesAsync(this IDevicesOperations operations, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task DeactivateAsync(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
-                await operations.InstallUpdatesWithHttpMessagesAsync(resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
+                await operations.DeactivateWithHttpMessagesAsync(deviceName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
+            }
+
+            /// <summary>
+            /// Downloads and installs the updates on the device.
+            /// </summary>
+            /// <param name='operations'>
+            /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
+            /// <param name='resourceGroupName'>
+            /// The resource group name
+            /// </param>
+            /// <param name='managerName'>
+            /// The manager name
+            /// </param>
+            public static void InstallUpdates(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName)
+            {
+                operations.InstallUpdatesAsync(deviceName, resourceGroupName, managerName).GetAwaiter().GetResult();
+            }
+
+            /// <summary>
+            /// Downloads and installs the updates on the device.
+            /// </summary>
+            /// <param name='operations'>
+            /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
+            /// <param name='resourceGroupName'>
+            /// The resource group name
+            /// </param>
+            /// <param name='managerName'>
+            /// The manager name
+            /// </param>
+            /// <param name='cancellationToken'>
+            /// The cancellation token.
+            /// </param>
+            public static async Task InstallUpdatesAsync(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            {
+                await operations.InstallUpdatesWithHttpMessagesAsync(deviceName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
             }
 
             /// <summary>
@@ -363,15 +399,18 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
             /// </param>
             /// <param name='managerName'>
             /// The manager name
             /// </param>
-            public static IEnumerable<FailoverSet> ListFailoverSets(this IDevicesOperations operations, string resourceGroupName, string managerName)
+            public static IEnumerable<FailoverSet> ListFailoverSets(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName)
             {
-                return operations.ListFailoverSetsAsync(resourceGroupName, managerName).GetAwaiter().GetResult();
+                return operations.ListFailoverSetsAsync(deviceName, resourceGroupName, managerName).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -383,6 +422,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
             /// </param>
@@ -392,9 +434,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task<IEnumerable<FailoverSet>> ListFailoverSetsAsync(this IDevicesOperations operations, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task<IEnumerable<FailoverSet>> ListFailoverSetsAsync(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
-                using (var _result = await operations.ListFailoverSetsWithHttpMessagesAsync(resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false))
+                using (var _result = await operations.ListFailoverSetsWithHttpMessagesAsync(deviceName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false))
                 {
                     return _result.Body;
                 }
@@ -409,15 +451,18 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='odataQuery'>
             /// OData parameters to apply to the operation.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
             /// </param>
             /// <param name='managerName'>
             /// The manager name
             /// </param>
-            public static IEnumerable<Metrics> ListMetrics(this IDevicesOperations operations, ODataQuery<MetricFilter> odataQuery, string resourceGroupName, string managerName)
+            public static IEnumerable<Metrics> ListMetrics(this IDevicesOperations operations, ODataQuery<MetricFilter> odataQuery, string deviceName, string resourceGroupName, string managerName)
             {
-                return operations.ListMetricsAsync(odataQuery, resourceGroupName, managerName).GetAwaiter().GetResult();
+                return operations.ListMetricsAsync(odataQuery, deviceName, resourceGroupName, managerName).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -429,6 +474,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='odataQuery'>
             /// OData parameters to apply to the operation.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
             /// </param>
@@ -438,9 +486,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task<IEnumerable<Metrics>> ListMetricsAsync(this IDevicesOperations operations, ODataQuery<MetricFilter> odataQuery, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task<IEnumerable<Metrics>> ListMetricsAsync(this IDevicesOperations operations, ODataQuery<MetricFilter> odataQuery, string deviceName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
-                using (var _result = await operations.ListMetricsWithHttpMessagesAsync(odataQuery, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false))
+                using (var _result = await operations.ListMetricsWithHttpMessagesAsync(odataQuery, deviceName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false))
                 {
                     return _result.Body;
                 }
@@ -452,15 +500,18 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
             /// </param>
             /// <param name='managerName'>
             /// The manager name
             /// </param>
-            public static IEnumerable<MetricDefinition> ListMetricDefinition(this IDevicesOperations operations, string resourceGroupName, string managerName)
+            public static IEnumerable<MetricDefinition> ListMetricDefinition(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName)
             {
-                return operations.ListMetricDefinitionAsync(resourceGroupName, managerName).GetAwaiter().GetResult();
+                return operations.ListMetricDefinitionAsync(deviceName, resourceGroupName, managerName).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -468,6 +519,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// </summary>
             /// <param name='operations'>
             /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
             /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
@@ -478,9 +532,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task<IEnumerable<MetricDefinition>> ListMetricDefinitionAsync(this IDevicesOperations operations, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task<IEnumerable<MetricDefinition>> ListMetricDefinitionAsync(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
-                using (var _result = await operations.ListMetricDefinitionWithHttpMessagesAsync(resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false))
+                using (var _result = await operations.ListMetricDefinitionWithHttpMessagesAsync(deviceName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false))
                 {
                     return _result.Body;
                 }
@@ -492,6 +546,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='parameters'>
             /// The publish support package request.
             /// </param>
@@ -501,9 +558,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='managerName'>
             /// The manager name
             /// </param>
-            public static void PublishSupportPackage(this IDevicesOperations operations, SupportPackageRequest parameters, string resourceGroupName, string managerName)
+            public static void PublishSupportPackage(this IDevicesOperations operations, string deviceName, SupportPackageRequest parameters, string resourceGroupName, string managerName)
             {
-                operations.PublishSupportPackageAsync(parameters, resourceGroupName, managerName).GetAwaiter().GetResult();
+                operations.PublishSupportPackageAsync(deviceName, parameters, resourceGroupName, managerName).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -512,6 +569,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='parameters'>
             /// The publish support package request.
             /// </param>
@@ -524,9 +584,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task PublishSupportPackageAsync(this IDevicesOperations operations, SupportPackageRequest parameters, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task PublishSupportPackageAsync(this IDevicesOperations operations, string deviceName, SupportPackageRequest parameters, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
-                await operations.PublishSupportPackageWithHttpMessagesAsync(parameters, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
+                await operations.PublishSupportPackageWithHttpMessagesAsync(deviceName, parameters, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
             }
 
             /// <summary>
@@ -534,6 +594,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// </summary>
             /// <param name='operations'>
             /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
             /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
@@ -541,9 +604,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='managerName'>
             /// The manager name
             /// </param>
-            public static void ScanForUpdates(this IDevicesOperations operations, string resourceGroupName, string managerName)
+            public static void ScanForUpdates(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName)
             {
-                operations.ScanForUpdatesAsync(resourceGroupName, managerName).GetAwaiter().GetResult();
+                operations.ScanForUpdatesAsync(deviceName, resourceGroupName, managerName).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -551,6 +614,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// </summary>
             /// <param name='operations'>
             /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
             /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
@@ -561,9 +627,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task ScanForUpdatesAsync(this IDevicesOperations operations, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task ScanForUpdatesAsync(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
-                await operations.ScanForUpdatesWithHttpMessagesAsync(resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
+                await operations.ScanForUpdatesWithHttpMessagesAsync(deviceName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
             }
 
             /// <summary>
@@ -571,6 +637,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// </summary>
             /// <param name='operations'>
             /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
             /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
@@ -578,9 +647,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='managerName'>
             /// The manager name
             /// </param>
-            public static Updates GetUpdateSummary(this IDevicesOperations operations, string resourceGroupName, string managerName)
+            public static Updates GetUpdateSummary(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName)
             {
-                return operations.GetUpdateSummaryAsync(resourceGroupName, managerName).GetAwaiter().GetResult();
+                return operations.GetUpdateSummaryAsync(deviceName, resourceGroupName, managerName).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -588,6 +657,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// </summary>
             /// <param name='operations'>
             /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
             /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
@@ -598,9 +670,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task<Updates> GetUpdateSummaryAsync(this IDevicesOperations operations, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task<Updates> GetUpdateSummaryAsync(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
-                using (var _result = await operations.GetUpdateSummaryWithHttpMessagesAsync(resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false))
+                using (var _result = await operations.GetUpdateSummaryWithHttpMessagesAsync(deviceName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false))
                 {
                     return _result.Body;
                 }
@@ -766,15 +838,18 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
             /// </param>
             /// <param name='managerName'>
             /// The manager name
             /// </param>
-            public static void BeginDelete(this IDevicesOperations operations, string resourceGroupName, string managerName)
+            public static void BeginDelete(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName)
             {
-                operations.BeginDeleteAsync(resourceGroupName, managerName).GetAwaiter().GetResult();
+                operations.BeginDeleteAsync(deviceName, resourceGroupName, managerName).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -783,6 +858,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
             /// </param>
@@ -792,9 +870,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task BeginDeleteAsync(this IDevicesOperations operations, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task BeginDeleteAsync(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
-                await operations.BeginDeleteWithHttpMessagesAsync(resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
+                await operations.BeginDeleteWithHttpMessagesAsync(deviceName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
             }
 
             /// <summary>
@@ -803,15 +881,18 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
             /// </param>
             /// <param name='managerName'>
             /// The manager name
             /// </param>
-            public static void BeginDeactivate(this IDevicesOperations operations, string resourceGroupName, string managerName)
+            public static void BeginDeactivate(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName)
             {
-                operations.BeginDeactivateAsync(resourceGroupName, managerName).GetAwaiter().GetResult();
+                operations.BeginDeactivateAsync(deviceName, resourceGroupName, managerName).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -820,42 +901,8 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
-            /// <param name='resourceGroupName'>
-            /// The resource group name
-            /// </param>
-            /// <param name='managerName'>
-            /// The manager name
-            /// </param>
-            /// <param name='cancellationToken'>
-            /// The cancellation token.
-            /// </param>
-            public static async Task BeginDeactivateAsync(this IDevicesOperations operations, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
-            {
-                await operations.BeginDeactivateWithHttpMessagesAsync(resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
-            }
-
-            /// <summary>
-            /// Downloads and installs the updates on the device.
-            /// </summary>
-            /// <param name='operations'>
-            /// The operations group for this extension method.
-            /// </param>
-            /// <param name='resourceGroupName'>
-            /// The resource group name
-            /// </param>
-            /// <param name='managerName'>
-            /// The manager name
-            /// </param>
-            public static void BeginInstallUpdates(this IDevicesOperations operations, string resourceGroupName, string managerName)
-            {
-                operations.BeginInstallUpdatesAsync(resourceGroupName, managerName).GetAwaiter().GetResult();
-            }
-
-            /// <summary>
-            /// Downloads and installs the updates on the device.
-            /// </summary>
-            /// <param name='operations'>
-            /// The operations group for this extension method.
+            /// <param name='deviceName'>
+            /// The device name
             /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
@@ -866,9 +913,52 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task BeginInstallUpdatesAsync(this IDevicesOperations operations, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task BeginDeactivateAsync(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
-                await operations.BeginInstallUpdatesWithHttpMessagesAsync(resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
+                await operations.BeginDeactivateWithHttpMessagesAsync(deviceName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
+            }
+
+            /// <summary>
+            /// Downloads and installs the updates on the device.
+            /// </summary>
+            /// <param name='operations'>
+            /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
+            /// <param name='resourceGroupName'>
+            /// The resource group name
+            /// </param>
+            /// <param name='managerName'>
+            /// The manager name
+            /// </param>
+            public static void BeginInstallUpdates(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName)
+            {
+                operations.BeginInstallUpdatesAsync(deviceName, resourceGroupName, managerName).GetAwaiter().GetResult();
+            }
+
+            /// <summary>
+            /// Downloads and installs the updates on the device.
+            /// </summary>
+            /// <param name='operations'>
+            /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
+            /// <param name='resourceGroupName'>
+            /// The resource group name
+            /// </param>
+            /// <param name='managerName'>
+            /// The manager name
+            /// </param>
+            /// <param name='cancellationToken'>
+            /// The cancellation token.
+            /// </param>
+            public static async Task BeginInstallUpdatesAsync(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            {
+                await operations.BeginInstallUpdatesWithHttpMessagesAsync(deviceName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
             }
 
             /// <summary>
@@ -876,6 +966,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// </summary>
             /// <param name='operations'>
             /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
             /// </param>
             /// <param name='parameters'>
             /// The publish support package request.
@@ -886,9 +979,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='managerName'>
             /// The manager name
             /// </param>
-            public static void BeginPublishSupportPackage(this IDevicesOperations operations, SupportPackageRequest parameters, string resourceGroupName, string managerName)
+            public static void BeginPublishSupportPackage(this IDevicesOperations operations, string deviceName, SupportPackageRequest parameters, string resourceGroupName, string managerName)
             {
-                operations.BeginPublishSupportPackageAsync(parameters, resourceGroupName, managerName).GetAwaiter().GetResult();
+                operations.BeginPublishSupportPackageAsync(deviceName, parameters, resourceGroupName, managerName).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -896,6 +989,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// </summary>
             /// <param name='operations'>
             /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
             /// </param>
             /// <param name='parameters'>
             /// The publish support package request.
@@ -909,9 +1005,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task BeginPublishSupportPackageAsync(this IDevicesOperations operations, SupportPackageRequest parameters, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task BeginPublishSupportPackageAsync(this IDevicesOperations operations, string deviceName, SupportPackageRequest parameters, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
-                await operations.BeginPublishSupportPackageWithHttpMessagesAsync(parameters, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
+                await operations.BeginPublishSupportPackageWithHttpMessagesAsync(deviceName, parameters, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
             }
 
             /// <summary>
@@ -919,6 +1015,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// </summary>
             /// <param name='operations'>
             /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
             /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
@@ -926,9 +1025,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='managerName'>
             /// The manager name
             /// </param>
-            public static void BeginScanForUpdates(this IDevicesOperations operations, string resourceGroupName, string managerName)
+            public static void BeginScanForUpdates(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName)
             {
-                operations.BeginScanForUpdatesAsync(resourceGroupName, managerName).GetAwaiter().GetResult();
+                operations.BeginScanForUpdatesAsync(deviceName, resourceGroupName, managerName).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -936,6 +1035,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// </summary>
             /// <param name='operations'>
             /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
             /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
@@ -946,9 +1048,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task BeginScanForUpdatesAsync(this IDevicesOperations operations, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task BeginScanForUpdatesAsync(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
-                await operations.BeginScanForUpdatesWithHttpMessagesAsync(resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
+                await operations.BeginScanForUpdatesWithHttpMessagesAsync(deviceName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
             }
 
             /// <summary>

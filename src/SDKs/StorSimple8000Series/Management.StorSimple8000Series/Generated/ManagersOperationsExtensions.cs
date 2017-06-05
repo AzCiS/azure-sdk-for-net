@@ -208,15 +208,18 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='operations'>
             /// The operations group for this extension method.
             /// </param>
+            /// <param name='deviceName'>
+            /// The device name
+            /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
             /// </param>
             /// <param name='managerName'>
             /// The manager name
             /// </param>
-            public static PublicKey GetDevicePublicEncryptionKey(this IManagersOperations operations, string resourceGroupName, string managerName)
+            public static PublicKey GetDevicePublicEncryptionKey(this IManagersOperations operations, string deviceName, string resourceGroupName, string managerName)
             {
-                return operations.GetDevicePublicEncryptionKeyAsync(resourceGroupName, managerName).GetAwaiter().GetResult();
+                return operations.GetDevicePublicEncryptionKeyAsync(deviceName, resourceGroupName, managerName).GetAwaiter().GetResult();
             }
 
             /// <summary>
@@ -224,6 +227,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// </summary>
             /// <param name='operations'>
             /// The operations group for this extension method.
+            /// </param>
+            /// <param name='deviceName'>
+            /// The device name
             /// </param>
             /// <param name='resourceGroupName'>
             /// The resource group name
@@ -234,9 +240,9 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task<PublicKey> GetDevicePublicEncryptionKeyAsync(this IManagersOperations operations, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task<PublicKey> GetDevicePublicEncryptionKeyAsync(this IManagersOperations operations, string deviceName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
-                using (var _result = await operations.GetDevicePublicEncryptionKeyWithHttpMessagesAsync(resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false))
+                using (var _result = await operations.GetDevicePublicEncryptionKeyWithHttpMessagesAsync(deviceName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false))
                 {
                     return _result.Body;
                 }
