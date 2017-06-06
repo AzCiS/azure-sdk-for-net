@@ -2,6 +2,7 @@ using Microsoft.Azure.Management.StorSimple8000Series;
 using Microsoft.Azure.Management.StorSimple8000Series.Models;
 using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -11,28 +12,85 @@ namespace StorSimple8000Series.Tests
     public class StorSimple8000SeriesTest : TestBase
     {
         [Fact]
-        public void TestStorsimpleOperations()
+        public void TestStorsimpleOperationsOnConfiguredDevices()
+        {
+            using (MockContext context = MockContext.Start(this.GetType().FullName))
+            {
+                var testBase = new StorSimple8000SeriesTestBase(context);
+
+                string firstDeviceName = null;
+                string secondDeviceName = null;
+                var requiredCountOfConfiguredDevices = 1;
+                CheckPrerequisitesAndInitialize(testBase, requiredCountOfConfiguredDevices, out firstDeviceName, out secondDeviceName);
+
+                try
+                {
+                    //Create SAC
+                    var sac = CreateStorageAccountCredential(testBase, TestConstants.DefaultStorageAccountName, TestConstants.DefaultStorageAccountAccessKey);
+
+                    //Create ACR
+                    var acr = CreateAccessControlRecord(testBase, Helpers.GenerateRandomName("ACRForSDKTest"), Helpers.GenerateRandomName(TestConstants.DefaultInitiatorName));
+
+                    //Create Volume Container
+                    var vc = CreateVolumeContainer(testBase, firstDeviceName, Helpers.GenerateRandomName("VCForSDKTest"));
+
+                    //Create volumes
+                    var vol = CreateVolume(testBase, firstDeviceName, vc.Name, Helpers.GenerateRandomName("VolForSDKTest"));
+                }
+                catch (Exception e)
+                {
+                    Assert.Null(e);
+                }
+                finally
+                {
+                    //Delete all entities created in the devices
+                }                
+            }
+        }
+
+        [Fact]
+        public void CreateStorSimpleManagerAndConfigureDevice()
         {
             using (MockContext context = MockContext.Start(this.GetType().FullName))
             {
                 var testBase = new StorSimple8000SeriesTestBase(context);
 
                 //create StorSimple Manager
-                var manager = CreateManagerAndValidate();
+                //var manager = CreateManager(testBase, testBase.ManagerName);
 
                 //Get Device Registration Key
                 var registrationKey = GetDeviceRegistrationKey(testBase);
 
-                //Configure Device
-                var device = ConfigureAndGetDevice(testBase);
+                //Configure and Get device
+                var device = ConfigureAndGetDevice(testBase, TestConstants.FirstDeviceName, TestConstants.FirstDeviceControllerZeroIp, TestConstants.FirstDeviceControllerOneIp);
 
-                //Create SAC
-                var sac = CreateStorageAccountCredential(testBase);
+                //TODO: Deactivate device
 
-                //Create Volume Container
-                var vc = CreateVolumeContainer(testBase, device.Name);
+                //TODO: Delete device
 
+                //TODO: Delete StorSimple Manager
             }
+        }
+
+        #region Private wrappers starts
+
+        private Manager CreateManager(StorSimple8000SeriesTestBase testBase, string managerName)
+        {
+            Manager resourceToCreate = new Manager()
+            {
+                Location = "westus",
+                CisIntrinsicSettings = new ManagerIntrinsicSettings()
+                {
+                    Type = ManagerType.GardaV1
+                }
+            };
+
+            Manager manager = testBase.Client.Managers.CreateOrUpdate(
+                                    resourceToCreate,
+                                    testBase.ResourceGroupName,
+                                    managerName);
+
+            return manager;
         }
 
         /// <summary>
@@ -40,38 +98,142 @@ namespace StorSimple8000Series.Tests
         /// </summary>
         private string GetDeviceRegistrationKey(StorSimple8000SeriesTestBase testBase)
         {
-            return testBase.client.Managers.GetDeviceRegistrationKey(testBase.ResourceGroupName, testBase.ManagerName);
+            return testBase.Client.Managers.GetDeviceRegistrationKey(testBase.ResourceGroupName, testBase.ManagerName);
         }
 
         /// <summary>
         /// Configure device and get the device.
         /// </summary>
-        /// <param name="testBase">The testbase.</param>
-        /// <returns></returns>
-        private Device ConfigureAndGetDevice(StorSimple8000SeriesTestBase testBase)
+        private Device ConfigureAndGetDevice(StorSimple8000SeriesTestBase testBase, string deviceNameWithoutDoubleEncoding, string controllerZeroIp, string controllerOneIp)
         {
-            throw new NotImplementedException();
+            Device device = testBase.Client.Devices.Get(
+                deviceNameWithoutDoubleEncoding.GetDoubleEncoded(),
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            if (device.Status == DeviceStatus.ReadyToSetup)
+            {
+                var secondaryDnsServers = TestConstants.SecondaryDnsServers.Split(';');
+                var configureDeviceRequest = new ConfigureDeviceRequest()
+                {
+                    FriendlyName = deviceNameWithoutDoubleEncoding.GetDoubleEncoded(),
+                    CurrentDeviceName = deviceNameWithoutDoubleEncoding.GetDoubleEncoded(),
+                    TimeZone = TimeZoneInfo.Local.DisplayName,
+                    NetworkInterfaceData0Settings = new NetworkInterfaceData0Settings()
+                    {
+                        ControllerZeroIp = controllerZeroIp,
+                        ControllerOneIp = controllerOneIp
+                    },
+                    DnsSettings = new SecondaryDNSSettings()
+                    {
+                        SecondaryDnsServers = new List<string>(secondaryDnsServers)
+                    }
+
+                };
+
+                testBase.Client.Devices.Configure(
+                    configureDeviceRequest,
+                    testBase.ResourceGroupName,
+                    testBase.ManagerName);
+
+                //need to add details related to odata filter
+                device = testBase.Client.Devices.Get(
+                    deviceNameWithoutDoubleEncoding.GetDoubleEncoded(),
+                    testBase.ResourceGroupName,
+                    testBase.ManagerName);
+            }
+
+            return device;
+        }
+
+        /// <summary>
+        /// Checks if minimum number of configured devices required for the testcase exists. If yes, populates names of them in the out-parameters.
+        /// </summary>
+        /// <param name="testBase">The test base.</param>
+        /// <param name="minimumConfigureDevicesCount">The minimum number of devices required to be configured for the testcase.</param>
+        /// <param name="firstDeviceName">The name of first configured device.</param>
+        /// <param name="secondDeviceName">The name of second configured device.</param>
+        private void CheckPrerequisitesAndInitialize(StorSimple8000SeriesTestBase testBase, int minimumConfigureDevicesCount, out string firstDeviceName, out string secondDeviceName)
+        {
+            var devices = testBase.Client.Devices.ListByManager(testBase.ResourceGroupName, testBase.ManagerName);
+
+            var countOfConfiguredDevicesFound = 0;
+            string[] configuredDeviceNames = new string[2];
+
+            foreach (var device in devices)
+            {
+                if (device.Status == DeviceStatus.Online)
+                {
+                    countOfConfiguredDevicesFound++;
+                    configuredDeviceNames.Append(device.Name);
+                }
+            }
+
+            Assert.True(countOfConfiguredDevicesFound >= minimumConfigureDevicesCount, string.Format("Minimum configured devices: Required={0}, ActuallyFound={1}", minimumConfigureDevicesCount, countOfConfiguredDevicesFound));
+
+            firstDeviceName = minimumConfigureDevicesCount > 0 ? configuredDeviceNames[0] : null;
+            secondDeviceName = minimumConfigureDevicesCount > 1 ? configuredDeviceNames[1] : null;
         }
 
         /// <summary>
         /// Create storage account credential.
         /// </summary>
-        /// <param name="testBase">The testbase.</param>
-        /// <returns></returns>
-        private StorageAccountCredential CreateStorageAccountCredential(StorSimple8000SeriesTestBase testBase)
+        private StorageAccountCredential CreateStorageAccountCredential(StorSimple8000SeriesTestBase testBase, string sacNameWithoutDoubleEncoding, string sacAccessKeyInPlainText)
         {
-            throw new NotImplementedException();
+            StorageAccountCredential sacToCreate = new StorageAccountCredential()
+            {
+                EndPoint = TestConstants.DefaultStorageAccountEndPoint,
+                SslStatus = SslStatus.Enabled,
+                AccessKey = testBase.Client.Managers.GetAsymmetricEncryptedSecret(
+                    testBase.ResourceGroupName,
+                    testBase.ManagerName,
+                    sacAccessKeyInPlainText)
+            };
+
+            var sac = testBase.Client.StorageAccountCredentials.CreateOrUpdate(
+                sacNameWithoutDoubleEncoding.GetDoubleEncoded(),
+                sacToCreate,
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            return sac;
         }
 
         /// <summary>
         /// Create Volume Container.
         /// </summary>
-        /// <param name="testBase"></param>
-        /// <param name="deviceName"></param>
-        /// <returns></returns>
-        private VolumeContainer CreateVolumeContainer(StorSimple8000SeriesTestBase testBase, string deviceName)
+        private VolumeContainer CreateVolumeContainer(StorSimple8000SeriesTestBase testBase, string deviceName, string volumeContainerName)
         {
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// Creates Access control record.
+        /// </summary>
+        private AccessControlRecord CreateAccessControlRecord(StorSimple8000SeriesTestBase testBase, string acrNameWithoutDoubleEncoding, string initiatorName)
+        {
+            var acrToCreate = new AccessControlRecord()
+            {
+                InitiatorName = initiatorName
+            };
+
+            var acr = testBase.Client.AccessControlRecords.CreateOrUpdate(
+                acrNameWithoutDoubleEncoding.GetDoubleEncoded(),
+                acrToCreate,
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            return acr;            
+        }
+
+        /// <summary>
+        /// Creates Volume.
+        /// </summary>
+        private Volume CreateVolume(StorSimple8000SeriesTestBase testBase, string deviceName, string volumeContainerName, string volumeNameWithoutDoubleEncoding)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion Private wrappers ends
     }
 }

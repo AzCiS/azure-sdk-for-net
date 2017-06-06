@@ -12,27 +12,21 @@ using System.Text;
 
 namespace StorSimple8000Series.Tests
 {
-    class StorSimple8000SeriesTestBase : TestBase
+    public class StorSimple8000SeriesTestBase : TestBase
     {
         private const string SubIdKey = "SubId";
-        private const string DefaultResourceGroupName = "ResourceGroupForSDKTest";
-        private const string DefaultManagerName = "ManagerForSDKTest";
-        private const string DefaultStorageAccountName = "StorageAccountForSDKTest";
-        private const string DefaultStorageAccountAccessKey = "<accessKey>";
-        public string subscriptionId { get; set; }
+        private string subscriptionId { get; set; }
 
-        public StorSimple8000SeriesManagementClient client { get; set; }
+        public StorSimple8000SeriesManagementClient Client { get; set; }
 
         public string ResourceGroupName { get; set; }
         public string ManagerName { get; set; }
-        public string StorageAccountName { get; set; }
-        public string StorageAccountAccessKey { get; set; }
 
-        public StorSimple8000SeriesTestBase(MockContext context, string resourceGroupName = DefaultResourceGroupName, string resourceName = DefaultManagerName)
+        public StorSimple8000SeriesTestBase(MockContext context, string resourceGroupName = TestConstants.DefaultResourceGroupName, string managerName = TestConstants.DefaultManagerName)
         {
             var testEnv = TestEnvironmentFactory.GetTestEnvironment();
             
-            this.client = context.GetServiceClient<StorSimple8000SeriesManagementClient>();
+            this.Client = context.GetServiceClient<StorSimple8000SeriesManagementClient>();
 
             if (HttpMockServer.Mode == HttpRecorderMode.Record)
             {
@@ -44,15 +38,13 @@ namespace StorSimple8000Series.Tests
                 subscriptionId = HttpMockServer.Variables[SubIdKey];
             } 
 
-            Initialize(resourceGroupName, resourceName);
+            Initialize(resourceGroupName, managerName);
         }
 
-        private void Initialize(string resourceGroupName, string resourceName)
+        private void Initialize(string resourceGroupName, string managerName)
         {
             this.ResourceGroupName = resourceGroupName;
-            this.ManagerName = resourceName;
-            this.StorageAccountName = DefaultStorageAccountName;
-            this.StorageAccountAccessKey = DefaultStorageAccountAccessKey;
+            this.ManagerName = managerName;
         }
     }
 }
