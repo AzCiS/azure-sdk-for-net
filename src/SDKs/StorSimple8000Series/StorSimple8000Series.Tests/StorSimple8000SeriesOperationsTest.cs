@@ -1,10 +1,12 @@
 using Microsoft.Azure.Management.StorSimple8000Series;
 using Microsoft.Azure.Management.StorSimple8000Series.Models;
+using Microsoft.Rest.Azure.OData;
 using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using Xunit;
 
 namespace StorSimple8000Series.Tests
@@ -44,7 +46,7 @@ namespace StorSimple8000Series.Tests
                 finally
                 {
                     //Delete all entities created in the devices
-                }                
+                }
             }
         }
 
@@ -72,8 +74,53 @@ namespace StorSimple8000Series.Tests
             }
         }
 
-        #region Private wrappers starts
+        [Fact]
+        public void TestMetricOperations()
+        {
+            using (MockContext context = MockContext.Start(this.GetType().FullName))
+            {
+                var testBase = new StorSimple8000SeriesTestBase(context);
 
+                //checking for prerequisites
+                var devices = Helpers.CheckAndGetConfiguredDevices(testBase, requiredCount: 1);
+                var volumeContainers = Helpers.CheckAndGetVolumeContainers(testBase, devices.First().Name, requiredCount: 1);
+                var volumes = Helpers.CheckAndGetVolumes(testBase, devices.First().Name, volumeContainers.First().Name, requiredCount: 1);
+
+                var deviceName = devices.First().Name;
+                var volumeContainerName = volumeContainers.First().Name;
+                var volumeName = volumes.First().Name;
+
+
+                //Get MetricDefinitions for Manager
+                var resourceMetricDefinition = Helpers.GetManagerMetricDefinitions(testBase);
+
+                //Get MetricDefinitions for Device
+                var deviceMetricDefinition = Helpers.GetDeviceMetricDefinition(testBase, deviceName);
+
+                //Get MetricDefinitions for VolumeContainer
+                var volumeContainerMetricDefinition = Helpers.GetVolumeContainerMetricDefinition(testBase, deviceName, volumeContainerName);
+
+                //Get MetricDefinitions for Volume
+                var volumeMetricDefinition = Helpers.GetVolumeMetricDefinition(testBase, deviceName, volumeContainerName, volumeName);
+
+                //Get Metrics for Manager
+                var resourceMetrics = Helpers.GetManagerMetrics(testBase, resourceMetricDefinition.First());
+
+                //Get Metrics for Device
+                var deviceMetrics = Helpers.GetDeviceMetrics(testBase, deviceName, deviceMetricDefinition.First());
+
+                //Get Metrics for VolumeContainer
+                var volumeContainerMetrics = Helpers.GetVolumeContainerMetrics(testBase, deviceName, volumeContainerName, volumeContainerMetricDefinition.First());
+
+                //Get Metrics for Volume
+                var volumeMetrics = Helpers.GetVolumeMetrics(testBase, deviceName, volumeContainerName, volumeName, volumeMetricDefinition.First());
+
+            }
+        }
+
+
+        #region Private wrappers starts
+        
         private Manager CreateManager(StorSimple8000SeriesTestBase testBase, string managerName)
         {
             Manager resourceToCreate = new Manager()
@@ -91,6 +138,22 @@ namespace StorSimple8000Series.Tests
                                     managerName);
 
             return manager;
+        
+        }
+
+        private VolumeContainer CreateVolumeContainer(StorSimple8000SeriesTestBase testBase, string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        private Volume CreateVolume(StorSimple8000SeriesTestBase testBase, string name, string name2)
+        {
+            throw new NotImplementedException();
+        }
+
+        private Manager CreateManagerAndValidate()
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -158,7 +221,7 @@ namespace StorSimple8000Series.Tests
             var devices = testBase.Client.Devices.ListByManager(testBase.ResourceGroupName, testBase.ManagerName);
 
             var countOfConfiguredDevicesFound = 0;
-            string[] configuredDeviceNames = new string[2];
+            var configuredDeviceNames = new List<string>();
 
             foreach (var device in devices)
             {
