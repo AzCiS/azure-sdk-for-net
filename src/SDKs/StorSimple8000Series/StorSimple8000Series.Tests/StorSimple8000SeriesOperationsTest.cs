@@ -1,13 +1,11 @@
-using Microsoft.Azure.Management.StorSimple8000Series;
-using Microsoft.Azure.Management.StorSimple8000Series.Models;
-using Microsoft.Rest.Azure.OData;
-using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using Xunit;
+using Microsoft.Azure.Management.StorSimple8000Series;
+using Microsoft.Azure.Management.StorSimple8000Series.Models;
+using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
 
 namespace StorSimple8000Series.Tests
 {
@@ -37,7 +35,23 @@ namespace StorSimple8000Series.Tests
                     var vc = CreateVolumeContainer(testBase, firstDeviceName, Helpers.GenerateRandomName("VCForSDKTest"));
 
                     //Create volumes
-                    var vol = CreateVolume(testBase, firstDeviceName, vc.Name, Helpers.GenerateRandomName("VolForSDKTest"));
+                    var vol = CreateVolume(testBase, firstDeviceName, "vcForOdataFilterTest", Helpers.GenerateRandomName("VolForSDKTest"));
+
+                    // Create a backup policy
+                    var backupPolicy = Helpers.CreateBackupPolicy(
+                        testBase,
+                        firstDeviceName,
+                        Helpers.GenerateRandomName("BkUpPolicyForSDKTest"),
+                        new List<string>() { vol.Id });
+
+                    // Take manual backup
+                    var backup = Helpers.BackupNow(testBase, firstDeviceName, backupPolicy.Name);
+
+                    // Restore
+                    Helpers.RestoreBackup(testBase, firstDeviceName, backup.Name);
+
+                    // Clone
+                    Helpers.CloneVolume(testBase, firstDeviceName, vol.Name);
                 }
                 catch (Exception e)
                 {
@@ -227,8 +241,8 @@ namespace StorSimple8000Series.Tests
             {
                 if (device.Status == DeviceStatus.Online)
                 {
+                    configuredDeviceNames[countOfConfiguredDevicesFound] = device.Name;
                     countOfConfiguredDevicesFound++;
-                    configuredDeviceNames.Append(device.Name);
                 }
             }
 
