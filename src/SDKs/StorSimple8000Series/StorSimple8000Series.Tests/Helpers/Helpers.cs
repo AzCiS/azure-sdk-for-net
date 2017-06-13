@@ -70,9 +70,9 @@ namespace StorSimple8000Series.Tests
         public static IEnumerable<Metrics> GetManagerMetrics(StorSimple8000SeriesTestBase testBase, MetricDefinition metricDefinition)
         {
             var managerMetrics = testBase.Client.Managers.ListMetrics(
+                GenerateOdataFiler(metricDefinition),
                 testBase.ResourceGroupName, 
-                testBase.ManagerName,
-                GenerateOdataFiler(metricDefinition));
+                testBase.ManagerName);
 
             return managerMetrics;
         }
@@ -111,7 +111,7 @@ namespace StorSimple8000Series.Tests
                 deviceName,
                 volumeContainerName);
 
-            return vcMetrics.Value;
+            return vcMetrics;
         }
 
         private static ODataQuery<MetricFilter> GenerateOdataFiler(MetricDefinition metricDefinition)

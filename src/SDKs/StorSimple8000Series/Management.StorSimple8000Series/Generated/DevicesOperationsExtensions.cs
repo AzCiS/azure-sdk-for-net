@@ -541,55 +541,6 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             }
 
             /// <summary>
-            /// Triggers collection of support package on a device.
-            /// </summary>
-            /// <param name='operations'>
-            /// The operations group for this extension method.
-            /// </param>
-            /// <param name='deviceName'>
-            /// The device name
-            /// </param>
-            /// <param name='parameters'>
-            /// The publish support package request.
-            /// </param>
-            /// <param name='resourceGroupName'>
-            /// The resource group name
-            /// </param>
-            /// <param name='managerName'>
-            /// The manager name
-            /// </param>
-            public static void PublishSupportPackage(this IDevicesOperations operations, string deviceName, SupportPackageRequest parameters, string resourceGroupName, string managerName)
-            {
-                operations.PublishSupportPackageAsync(deviceName, parameters, resourceGroupName, managerName).GetAwaiter().GetResult();
-            }
-
-            /// <summary>
-            /// Triggers collection of support package on a device.
-            /// </summary>
-            /// <param name='operations'>
-            /// The operations group for this extension method.
-            /// </param>
-            /// <param name='deviceName'>
-            /// The device name
-            /// </param>
-            /// <param name='parameters'>
-            /// The publish support package request.
-            /// </param>
-            /// <param name='resourceGroupName'>
-            /// The resource group name
-            /// </param>
-            /// <param name='managerName'>
-            /// The manager name
-            /// </param>
-            /// <param name='cancellationToken'>
-            /// The cancellation token.
-            /// </param>
-            public static async Task PublishSupportPackageAsync(this IDevicesOperations operations, string deviceName, SupportPackageRequest parameters, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
-            {
-                await operations.PublishSupportPackageWithHttpMessagesAsync(deviceName, parameters, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
-            }
-
-            /// <summary>
             /// Scans for updates on the device.
             /// </summary>
             /// <param name='operations'>
@@ -959,55 +910,6 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             public static async Task BeginInstallUpdatesAsync(this IDevicesOperations operations, string deviceName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
                 await operations.BeginInstallUpdatesWithHttpMessagesAsync(deviceName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
-            }
-
-            /// <summary>
-            /// Triggers collection of support package on a device.
-            /// </summary>
-            /// <param name='operations'>
-            /// The operations group for this extension method.
-            /// </param>
-            /// <param name='deviceName'>
-            /// The device name
-            /// </param>
-            /// <param name='parameters'>
-            /// The publish support package request.
-            /// </param>
-            /// <param name='resourceGroupName'>
-            /// The resource group name
-            /// </param>
-            /// <param name='managerName'>
-            /// The manager name
-            /// </param>
-            public static void BeginPublishSupportPackage(this IDevicesOperations operations, string deviceName, SupportPackageRequest parameters, string resourceGroupName, string managerName)
-            {
-                operations.BeginPublishSupportPackageAsync(deviceName, parameters, resourceGroupName, managerName).GetAwaiter().GetResult();
-            }
-
-            /// <summary>
-            /// Triggers collection of support package on a device.
-            /// </summary>
-            /// <param name='operations'>
-            /// The operations group for this extension method.
-            /// </param>
-            /// <param name='deviceName'>
-            /// The device name
-            /// </param>
-            /// <param name='parameters'>
-            /// The publish support package request.
-            /// </param>
-            /// <param name='resourceGroupName'>
-            /// The resource group name
-            /// </param>
-            /// <param name='managerName'>
-            /// The manager name
-            /// </param>
-            /// <param name='cancellationToken'>
-            /// The cancellation token.
-            /// </param>
-            public static async Task BeginPublishSupportPackageAsync(this IDevicesOperations operations, string deviceName, SupportPackageRequest parameters, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
-            {
-                await operations.BeginPublishSupportPackageWithHttpMessagesAsync(deviceName, parameters, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false);
             }
 
             /// <summary>

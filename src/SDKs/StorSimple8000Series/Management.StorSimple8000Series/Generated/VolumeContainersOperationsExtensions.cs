@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='managerName'>
             /// The manager name
             /// </param>
-            public static MetricList ListMetrics(this IVolumeContainersOperations operations, ODataQuery<MetricFilter> odataQuery, string deviceName, string volumeContainerName, string resourceGroupName, string managerName)
+            public static IEnumerable<Metrics> ListMetrics(this IVolumeContainersOperations operations, ODataQuery<MetricFilter> odataQuery, string deviceName, string volumeContainerName, string resourceGroupName, string managerName)
             {
                 return operations.ListMetricsAsync(odataQuery, deviceName, volumeContainerName, resourceGroupName, managerName).GetAwaiter().GetResult();
             }
@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             /// <param name='cancellationToken'>
             /// The cancellation token.
             /// </param>
-            public static async Task<MetricList> ListMetricsAsync(this IVolumeContainersOperations operations, ODataQuery<MetricFilter> odataQuery, string deviceName, string volumeContainerName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
+            public static async Task<IEnumerable<Metrics>> ListMetricsAsync(this IVolumeContainersOperations operations, ODataQuery<MetricFilter> odataQuery, string deviceName, string volumeContainerName, string resourceGroupName, string managerName, CancellationToken cancellationToken = default(CancellationToken))
             {
                 using (var _result = await operations.ListMetricsWithHttpMessagesAsync(odataQuery, deviceName, volumeContainerName, resourceGroupName, managerName, null, cancellationToken).ConfigureAwait(false))
                 {
