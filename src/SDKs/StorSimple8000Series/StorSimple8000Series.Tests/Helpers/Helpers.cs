@@ -16,17 +16,157 @@ namespace StorSimple8000Series.Tests
 {
     public static class Helpers
     {
-        public static string GetDoubleEncoded(this string input)
+        #region Manager Helper
+        public static Manager CreateManager(StorSimple8000SeriesTestBase testBase, string managerName)
         {
-            return Uri.EscapeDataString(Uri.EscapeDataString(input));
-        }
+            Manager resourceToCreate = new Manager()
+            {
+                Location = "westus",
+                CisIntrinsicSettings = new ManagerIntrinsicSettings()
+                {
+                    Type = ManagerType.GardaV1
+                }
+            };
 
-        public static string GenerateRandomName(string prefix)
+            Manager manager = testBase.Client.Managers.CreateOrUpdate(
+                                    resourceToCreate,
+                                    testBase.ResourceGroupName,
+                                    managerName);
+
+            return manager;
+        }
+        #endregion
+
+        #region Device registration Key - Secrets flow
+        /// <summary>
+        /// Get the device registration key.
+        /// </summary>
+        public static string GetDeviceRegistrationKey(StorSimple8000SeriesTestBase testBase)
         {
-            var random = new Random();
-            return prefix + random.Next();
+            return testBase.Client.Managers.GetDeviceRegistrationKey(testBase.ResourceGroupName, testBase.ManagerName);
         }
+        #endregion
 
+        #region Device
+        /// <summary>
+        /// Configure device and get the device.
+        /// </summary>
+        public static Device ConfigureAndGetDevice(StorSimple8000SeriesTestBase testBase, string deviceNameWithoutDoubleEncoding, string controllerZeroIp, string controllerOneIp)
+        {
+            Device device = testBase.Client.Devices.Get(
+                deviceNameWithoutDoubleEncoding.GetDoubleEncoded(),
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            if (device.Status == DeviceStatus.ReadyToSetup)
+            {
+                var secondaryDnsServers = TestConstants.SecondaryDnsServers.Split(';');
+                var configureDeviceRequest = new ConfigureDeviceRequest()
+                {
+                    FriendlyName = deviceNameWithoutDoubleEncoding.GetDoubleEncoded(),
+                    CurrentDeviceName = deviceNameWithoutDoubleEncoding.GetDoubleEncoded(),
+                    TimeZone = "India Standard Time",
+                    NetworkInterfaceData0Settings = new NetworkInterfaceData0Settings()
+                    {
+                        ControllerZeroIp = controllerZeroIp,
+                        ControllerOneIp = controllerOneIp
+                    },
+                    DnsSettings = new SecondaryDNSSettings()
+                    {
+                        SecondaryDnsServers = new List<string>(secondaryDnsServers)
+                    }
+
+                };
+
+                testBase.Client.Devices.Configure(
+                    configureDeviceRequest,
+                    testBase.ResourceGroupName,
+                    testBase.ManagerName);
+
+                //need to add details related to odata filter
+                device = testBase.Client.Devices.Get(
+                    deviceNameWithoutDoubleEncoding.GetDoubleEncoded(),
+                    testBase.ResourceGroupName,
+                    testBase.ManagerName);
+            }
+
+            return device;
+        }
+        #endregion
+
+        #region Storage account credential
+        /// <summary>
+        /// Create storage account credential.
+        /// </summary>
+        public static StorageAccountCredential CreateStorageAccountCredential(StorSimple8000SeriesTestBase testBase, string sacNameWithoutDoubleEncoding, string sacAccessKeyInPlainText)
+        {
+            StorageAccountCredential sacToCreate = new StorageAccountCredential()
+            {
+                EndPoint = TestConstants.DefaultStorageAccountEndPoint,
+                SslStatus = SslStatus.Enabled,
+                AccessKey = testBase.Client.Managers.GetAsymmetricEncryptedSecret(
+                    testBase.ResourceGroupName,
+                    testBase.ManagerName,
+                    sacAccessKeyInPlainText)
+            };
+
+            testBase.Client.StorageAccountCredentials.CreateOrUpdate(
+                sacNameWithoutDoubleEncoding.GetDoubleEncoded(),
+                sacToCreate,
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            var sac = testBase.Client.StorageAccountCredentials.Get(
+                sacNameWithoutDoubleEncoding.GetDoubleEncoded(),
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            Assert.True(sac != null && sac.Name.Equals(sacNameWithoutDoubleEncoding) &&
+                sac.SslStatus.Equals(SslStatus.Enabled) &&
+                sac.EndPoint.Equals(TestConstants.DefaultStorageAccountEndPoint),
+                "Creation of SAC was not successful.");
+
+            return sac;
+        }
+        #endregion
+
+        #region Bandwidth Setting
+        public static BandwidthSetting CreateBandwidthSetting(StorSimple8000SeriesTestBase testBase, string bwsName)
+        {
+            //bandwidth schedule
+            var rateInMbps = 10;
+            var days = new List<SSModels.DayOfWeek?>() { SSModels.DayOfWeek.Saturday, SSModels.DayOfWeek.Sunday };
+            var bandwidthSchedule1 = new BandwidthSchedule()
+            {
+                Start = new Time(10, 0, 0),
+                Stop = new Time(20, 0, 0),
+                RateInMbps = rateInMbps,
+                Days = days
+            };
+
+            //bandwidth Setting
+            var bwsToCreate = new BandwidthSetting()
+            {
+                Schedules = new List<BandwidthSchedule>() { bandwidthSchedule1 }
+            };
+
+            testBase.Client.BandwidthSettings.CreateOrUpdate(
+                bwsName.GetDoubleEncoded(),
+                bwsToCreate,
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            var bws = testBase.Client.BandwidthSettings.Get(
+                bwsName.GetDoubleEncoded(),
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            //validation
+            Assert.True(bws != null && bws.Name.Equals(bwsName) &&
+                bws.Schedules != null && bws.Schedules.Count != 0, "Creation of Bandwidth Setting was not successful.");
+
+            return bws;
+        }
 
         #region get entities
 
@@ -51,6 +191,11 @@ namespace StorSimple8000Series.Tests
             Assert.True(volumeContainers.Count() >= requiredCount, string.Format("Minimum configured volumeContainers: Required={0}, ActuallyFound={1}", requiredCount, volumeContainers.Count()));
 
             return volumeContainers;
+        }
+
+        internal static object CheckAndGetVolumeContainers()
+        {
+            throw new NotImplementedException();
         }
 
         public static IEnumerable<Device> CheckAndGetConfiguredDevices(StorSimple8000SeriesTestBase testBase, int requiredCount)
@@ -500,7 +645,7 @@ namespace StorSimple8000Series.Tests
             string deviceName,
             string volumeName)
         {
-            string cloneVolumeName = Helpers.GenerateRandomName("CloneVolForSDKTest");
+            string cloneVolumeName = TestUtilities.GenerateRandomName("CloneVolForSDKTest");
 
             // Get the device
             var device = testBase.Client.Devices.Get(
@@ -560,6 +705,191 @@ namespace StorSimple8000Series.Tests
 
             Assert.NotNull(clonedVolume);
         }
+        #endregion
+
+        #region Access Control Record
+        /// <summary>
+        /// Creates Access control record.
+        /// </summary>
+        public static AccessControlRecord CreateAccessControlRecord(StorSimple8000SeriesTestBase testBase, string acrNameWithoutDoubleEncoding, string initiatorName)
+        {
+            var acrToCreate = new AccessControlRecord()
+            {
+                InitiatorName = initiatorName
+            };
+
+            testBase.Client.AccessControlRecords.CreateOrUpdate(
+                acrNameWithoutDoubleEncoding.GetDoubleEncoded(),
+                acrToCreate,
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            var acr = testBase.Client.AccessControlRecords.Get(
+                acrNameWithoutDoubleEncoding.GetDoubleEncoded(),
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            Assert.True(acr != null && acr.Name.Equals(acrNameWithoutDoubleEncoding) &&
+                acr.InitiatorName.Equals(initiatorName),
+                "Creation of ACR was not successful.");
+
+            return acr;
+        }
+        #endregion
+        #endregion
+
+        public static void DeleteSacAcrBwsVolumeAndVolumeContainersInDevice(StorSimple8000SeriesTestBase testBase, string deviceName)
+        {
+            var sacs = testBase.Client.StorageAccountCredentials.ListByManager(testBase.ResourceGroupName, testBase.ManagerName);
+            var acrs = testBase.Client.AccessControlRecords.ListByManager(testBase.ResourceGroupName, testBase.ManagerName);
+        }
+
+        #region Volume Container
+        /// <summary>
+        /// Create Volume Container, with Bandwidth Setting template.
+        /// </summary>
+        public static VolumeContainer CreateVolumeContainerWithBWS(StorSimple8000SeriesTestBase testBase, string deviceName, string volumeContainerName, string sacName, string bwsName)
+        {
+            var sac = testBase.Client.StorageAccountCredentials.Get(sacName.GetDoubleEncoded(), testBase.ResourceGroupName, testBase.ManagerName);
+            var bws = testBase.Client.BandwidthSettings.Get(bwsName.GetDoubleEncoded(), testBase.ResourceGroupName, testBase.ManagerName);
+            Assert.True(sac != null && sac.Id != null, "Storage account credential name passed for use in volume container doesn't exists.");
+            Assert.True(bws != null && bws.Id != null, "Bandwidth setting name passed for use in volume container doesn't exists.");
+
+            var vcToCreate = new VolumeContainer()
+            {
+                StorageAccountCredentialId = sac.Id,
+                BandwidthSettingId = bws.Id,
+                EncryptionKey = testBase.Client.Managers.GetAsymmetricEncryptedSecret(testBase.ResourceGroupName, testBase.ManagerName, TestUtilities.GenerateRandomName("EncryptionKeyForVC"))
+            };
+
+            testBase.Client.VolumeContainers.CreateOrUpdate(
+                deviceName.GetDoubleEncoded(),
+                volumeContainerName.GetDoubleEncoded(),
+                vcToCreate,
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            var vc = testBase.Client.VolumeContainers.Get(
+                deviceName.GetDoubleEncoded(),
+                volumeContainerName.GetDoubleEncoded(),
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            Assert.True(vc != null && vc.Name.Equals(volumeContainerName) &&
+                vc.StorageAccountCredentialId.Equals(sac.Id) &&
+                vc.BandwidthSettingId.Equals(bws.Id),
+                "Creation of Volume Container was not successful");
+
+            return vc;
+        }
+        #endregion
+
+        #region Volume
+        /// <summary>
+        /// Creates Volume.
+        /// </summary>
+        public static Volume CreateVolume(StorSimple8000SeriesTestBase testBase, string deviceName, string volumeContainerName, string volumeName, VolumeType volumeType, string acrName)
+        {
+            var acr = testBase.Client.AccessControlRecords.Get(acrName.GetDoubleEncoded(), testBase.ResourceGroupName, testBase.ManagerName);
+            Assert.True(acr != null && acr.Name.Equals(acrName), "Access control record name passed for use in volume doesn't exists.");
+
+            var volumeToCreate = new Volume()
+            {
+                AccessControlRecordIds = new List<string>() { acr.Id },
+                MonitoringStatus = MonitoringStatus.Enabled,
+                SizeInBytes = (long)5*1024*1024*1024, //5 Gb
+                VolumeType = volumeType,
+                VolumeStatus = VolumeStatus.Online
+            };
+            
+            testBase.Client.Volumes.CreateOrUpdate(deviceName.GetDoubleEncoded(),
+                volumeContainerName.GetDoubleEncoded(),
+                volumeName.GetDoubleEncoded(),
+                volumeToCreate,
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            var volume = testBase.Client.Volumes.Get(
+                deviceName.GetDoubleEncoded(),
+                volumeContainerName.GetDoubleEncoded(),
+                volumeName.GetDoubleEncoded(),
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            Assert.True(volume != null && volume.Name.Equals(volumeName) &&
+                volume.MonitoringStatus.Equals(MonitoringStatus.Enabled) &&
+                volume.VolumeType.Equals(volumeType) &&
+                volume.VolumeStatus.Equals(VolumeStatus.Online),
+                "Creation of Volume was not successful");
+
+            return volume;
+        }
+        #endregion
+
+        #region Prerequisite Checks for tests
+        /// <summary>
+        /// Checks if minimum number of configured devices required for the testcase exists. If yes, returns names of them.
+        /// </summary>
+        /// <param name="testBase">The test base.</param>
+        /// <param name="minimumRequiredConfiguredDevices">The minimum number of devices required to be configured for the testcase.</param>
+        public static List<string> CheckAndGetConfiguredDevices1(StorSimple8000SeriesTestBase testBase, int minimumRequiredConfiguredDevices)
+        {
+            var devices = testBase.Client.Devices.ListByManager(testBase.ResourceGroupName, testBase.ManagerName);
+
+            var configuredDeviceCount = 0;
+            var configuredDeviceNames = new List<string>();
+
+            foreach (var device in devices)
+            {
+                if (device.Status == DeviceStatus.Online)
+                {
+                    configuredDeviceCount++;
+                    configuredDeviceNames.Add(device.Name);
+                    if (configuredDeviceCount == minimumRequiredConfiguredDevices)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            Assert.True(configuredDeviceCount == minimumRequiredConfiguredDevices, string.Format("Could not found minimum configured devices: Required={0}, ActuallyFound={1}", minimumRequiredConfiguredDevices, configuredDeviceCount));
+
+            return configuredDeviceNames;
+        }
+
+        public static IEnumerable<StorageAccountCredential> CheckAndGetStorageAccountCredentials(StorSimple8000SeriesTestBase testBase, int requiredCount)
+        {
+            var sacs = testBase.Client.StorageAccountCredentials.ListByManager(
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            Assert.True(sacs.Count() >= requiredCount, string.Format("Could not found minimum Storage Account Credentials: Required={0}, ActuallyFound={1}", requiredCount, sacs.Count()));
+
+            return sacs;
+        }
+
+        public static IEnumerable<BandwidthSetting> CheckAndGetBandwidthSettings(StorSimple8000SeriesTestBase testBase, int requiredCount)
+        {
+            var bandwidthSettings = testBase.Client.BandwidthSettings.ListByManager(
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            Assert.True(bandwidthSettings.Count() >= requiredCount, string.Format("Could not found minimum Bandwidth settings: Required={0}, ActuallyFound={1}", requiredCount, bandwidthSettings.Count()));
+
+            return bandwidthSettings;
+        }
+        
+        public static IEnumerable<AccessControlRecord> CheckAndGetAccessControlRecords(StorSimple8000SeriesTestBase testBase, int requiredCount)
+        {
+            var accessControlRecords = testBase.Client.AccessControlRecords.ListByManager(
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            Assert.True(accessControlRecords.Count() >= requiredCount, string.Format("Could not found minimum access control records: Required={0}, ActuallyFound={1}", requiredCount, accessControlRecords.Count()));
+
+            return accessControlRecords;
+        }
+
         #endregion
     }
 }
