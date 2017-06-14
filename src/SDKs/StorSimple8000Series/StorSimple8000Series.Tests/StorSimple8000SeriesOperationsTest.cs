@@ -37,7 +37,7 @@ namespace StorSimple8000Series.Tests
                     //Create Bandwidth Setting
                     var bws = Helpers.CreateBandwidthSetting(
                         testBase,
-                        TestUtilities.GenerateRandomName("BWSForSDKTest"));                    
+                        TestUtilities.GenerateRandomName("BWSForSDKTest"));
                 }
                 catch (Exception e)
                 {
@@ -200,12 +200,49 @@ namespace StorSimple8000Series.Tests
         }
 
         [Fact]
-        public void TestStorsimpleDeviceSettingsOperationsOnConfiguredDevices()
+        public void TestFailover()
         {
             using (MockContext context = MockContext.Start(this.GetType().FullName))
             {
                 var testBase = new StorSimple8000SeriesTestBase(context);
 
+                //check and get pre-requisites - 2 devices, volumeContainer, volumes
+                var deviceNames = Helpers.CheckAndGetConfiguredDevices1(
+                    testBase,
+                    minimumRequiredConfiguredDevices: 2);
+
+                // CheckAndGet call asserts on the count
+                var firstDeviceName = deviceNames.First();
+                var secondDeviceName = deviceNames[1];
+
+                var volumeContainers = Helpers.CheckAndGetVolumeContainers(
+                    testBase,
+                    firstDeviceName,
+                    requiredCount: 2);
+
+                // The checkandget call asserts on the requested count
+                var volumeContainerNames = new List<string>();
+
+                foreach (VolumeContainer vc in volumeContainers)
+                {
+                    volumeContainerNames.Add(vc.Name);
+                }
+
+                // Do failover
+                Helpers.Failover(
+                    testBase,
+                    firstDeviceName,
+                    secondDeviceName,
+                    volumeContainerNames);
+            }
+        }
+
+        [Fact]
+        public void TestStorsimpleDeviceSettingsOperationsOnConfiguredDevices()
+        {
+            using (MockContext context = MockContext.Start(this.GetType().FullName))
+            {
+                var testBase = new StorSimple8000SeriesTestBase(context);
                 var deviceNames = Helpers.CheckAndGetConfiguredDevices1(testBase, minimumRequiredConfiguredDevices: 1);
                 var firstDeviceName = deviceNames[0];
 
