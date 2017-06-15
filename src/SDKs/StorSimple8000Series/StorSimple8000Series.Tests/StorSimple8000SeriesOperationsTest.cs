@@ -17,8 +17,8 @@ namespace StorSimple8000Series.Tests
             {
                 var testBase = new StorSimple8000SeriesTestBase(context);
 
-                var deviceNames = Helpers.CheckAndGetConfiguredDevices1(testBase, minimumRequiredConfiguredDevices: 1);
-                var firstDeviceName = deviceNames[0];
+                var devices = Helpers.CheckAndGetConfiguredDevices(testBase, requiredCount: 1);
+                var firstDeviceName = devices.First().Name;
 
                 try
                 {
@@ -37,7 +37,7 @@ namespace StorSimple8000Series.Tests
                     //Create Bandwidth Setting
                     var bws = Helpers.CreateBandwidthSetting(
                         testBase,
-                        TestUtilities.GenerateRandomName("BWSForSDKTest"));                    
+                        TestUtilities.GenerateRandomName("BWSForSDKTest"));
                 }
                 catch (Exception e)
                 {
@@ -54,19 +54,13 @@ namespace StorSimple8000Series.Tests
                 var testBase = new StorSimple8000SeriesTestBase(context);
 
                 //create StorSimple Manager
-                //var manager = Helpers.CreateManager(testBase, testBase.ManagerName);
+                var manager = Helpers.CreateManager(testBase, testBase.ManagerName);
 
                 //Get Device Registration Key
                 var registrationKey = Helpers.GetDeviceRegistrationKey(testBase);
 
                 //Configure and Get device
                 var device = Helpers.ConfigureAndGetDevice(testBase, TestConstants.FirstDeviceName, TestConstants.FirstDeviceControllerZeroIp, TestConstants.FirstDeviceControllerOneIp);
-
-                //TODO: Deactivate device
-
-                //TODO: Delete device
-
-                //TODO: Delete StorSimple Manager
             }
         }
 
@@ -79,13 +73,11 @@ namespace StorSimple8000Series.Tests
 
                 //checking for prerequisites
                 var devices = Helpers.CheckAndGetConfiguredDevices(testBase, requiredCount: 1);
-                var volumeContainers = Helpers.CheckAndGetVolumeContainers(testBase, devices.First().Name, requiredCount: 1);
-                var volumes = Helpers.CheckAndGetVolumes(testBase, devices.First().Name, volumeContainers.First().Name, requiredCount: 1);
-
                 var deviceName = devices.First().Name;
+                var volumeContainers = Helpers.CheckAndGetVolumeContainers(testBase, deviceName, requiredCount: 1);
                 var volumeContainerName = volumeContainers.First().Name;
+                var volumes = Helpers.CheckAndGetVolumes(testBase, deviceName, volumeContainers.First().Name, requiredCount: 1);
                 var volumeName = volumes.First().Name;
-
 
                 //Get MetricDefinitions for Manager
                 var resourceMetricDefinition = Helpers.GetManagerMetricDefinitions(testBase);
@@ -121,11 +113,11 @@ namespace StorSimple8000Series.Tests
                 var testBase = new StorSimple8000SeriesTestBase(context);
 
                 //check and get prerequisites - device, sac, acr, bws
-                var deviceNames = Helpers.CheckAndGetConfiguredDevices1(testBase, minimumRequiredConfiguredDevices: 1);
+                var devices = Helpers.CheckAndGetConfiguredDevices(testBase, requiredCount: 1);
                 var sacs = Helpers.CheckAndGetStorageAccountCredentials(testBase, requiredCount: 1);
                 var bandwidthSettings = Helpers.CheckAndGetBandwidthSettings(testBase, requiredCount: 1);
                 var acrs = Helpers.CheckAndGetAccessControlRecords(testBase, requiredCount: 1);
-                var firstDeviceName = deviceNames[0];
+                var firstDeviceName = devices.First().Name;
                 var sacName = sacs.First().Name;
                 var bwsName = bandwidthSettings.First().Name;
                 var acrName = acrs.First().Name;
@@ -133,7 +125,7 @@ namespace StorSimple8000Series.Tests
                 try
                 {
                     //Create Volume Container
-                    var vc = Helpers.CreateVolumeContainerWithBWS(
+                    var vc = Helpers.CreateVolumeContainer(
                         testBase,
                         firstDeviceName,
                         TestUtilities.GenerateRandomName("VCForSDKTest"),
@@ -162,8 +154,8 @@ namespace StorSimple8000Series.Tests
                 var testBase = new StorSimple8000SeriesTestBase(context);
 
                 //check and get pre-requisites - device, volumeContainer, volumes
-                var deviceNames = Helpers.CheckAndGetConfiguredDevices1(testBase, minimumRequiredConfiguredDevices: 1);
-                var firstDeviceName = deviceNames.First();
+                var devices = Helpers.CheckAndGetConfiguredDevices(testBase, requiredCount: 1);
+                var firstDeviceName = devices.First().Name;
                 var volumeContainerNames = Helpers.CheckAndGetVolumeContainers(testBase, firstDeviceName, requiredCount: 1);
                 var volumeContainerName = volumeContainerNames.First().Name;
                 var volumes = Helpers.CheckAndGetVolumes(testBase, firstDeviceName, volumeContainerName, requiredCount: 2);
@@ -196,6 +188,26 @@ namespace StorSimple8000Series.Tests
                 {
                     Assert.Null(e);
                 }
+            }
+        }
+
+        [Fact]
+        public void TestOperationsAndFeaturesAPI()
+        {
+            using (MockContext context = MockContext.Start(this.GetType().FullName))
+            {
+                var testBase = new StorSimple8000SeriesTestBase(context);
+
+                //operations
+                var operations = Helpers.GetOperations(testBase);
+
+                //features for StorSimple Manager
+                var featuresForResource = Helpers.GetFeatures(testBase);
+
+                //features for device
+                var devices = Helpers.CheckAndGetConfiguredDevices(testBase, requiredCount: 1);
+                var deviceName = devices.First().Name;
+                var featuresForDevice = Helpers.GetFeatures(testBase, deviceName);
             }
         }
     }
