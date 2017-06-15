@@ -11,6 +11,7 @@ namespace StorSimple8000Series.Tests
 {
     public class StorSimple8000SeriesTest : TestBase
     {
+        [Fact]
         public void TestServiceConfiguration()
         {
             using (MockContext context = MockContext.Start(this.GetType().FullName))
@@ -208,6 +209,104 @@ namespace StorSimple8000Series.Tests
                 var devices = Helpers.CheckAndGetConfiguredDevices(testBase, requiredCount: 1);
                 var deviceName = devices.First().Name;
                 var featuresForDevice = Helpers.GetFeatures(testBase, deviceName);
+            }
+        }
+
+        [Fact]
+        public void TestFailover()
+        {
+            using (MockContext context = MockContext.Start(this.GetType().FullName))
+            {
+                var testBase = new StorSimple8000SeriesTestBase(context);
+                //check and get pre-requisites - 2 devices, volumeContainer, volumes
+                var devices = Helpers.CheckAndGetConfiguredDevices(
+                testBase,
+                requiredCount: 2);
+
+                // CheckAndGet call asserts on the count
+                var firstDeviceName = devices.ElementAt(1).Name;
+                var secondDeviceName = devices.ElementAt(1).Name;
+
+                var volumeContainers = Helpers.CheckAndGetVolumeContainers(
+                    testBase,
+                    firstDeviceName,
+                    requiredCount: 2);
+
+                // The checkandget call asserts on the requested count
+                var volumeContainerNames = new List<string>();
+
+                foreach (VolumeContainer vc in volumeContainers)
+                {
+                    volumeContainerNames.Add(vc.Name);
+                }
+
+                // Do failover
+                Helpers.Failover(
+                    testBase,
+                    firstDeviceName,
+                    secondDeviceName,
+                    volumeContainerNames);
+            }
+        }    
+
+        [Fact]
+        public void TestStorsimpleDeviceSettingsOperationsOnConfiguredDevices()
+        {
+            using (MockContext context = MockContext.Start(this.GetType().FullName))
+            {
+                var testBase = new StorSimple8000SeriesTestBase(context);
+                var devices = Helpers.CheckAndGetConfiguredDevices(testBase, requiredCount: 1);
+                var firstDeviceName = devices.First().Name;
+
+                try
+                {
+                    //Create Time Settings
+                    var timeSettings = Helpers.CreateTimeSettings(
+                        testBase,
+                        firstDeviceName);
+
+                    //Create Alert Settings
+                    var alertSettings = Helpers.CreateAlertSettings(testBase,
+                        firstDeviceName);
+
+                    //Create Network Settings
+                    var bws = Helpers.CreateNetworkSettings(testBase,
+                        firstDeviceName);
+
+                    //Create Security Settings
+                    var securitySettings = Helpers.CreateSecuritySettings(testBase,
+                        firstDeviceName);
+
+                }
+                catch (Exception e)
+                {
+                    Assert.Null(e);
+                }
+            }
+        }
+
+        [Fact]
+        public void TestServiceDataEncryptionKeyRooloverOnConfiguredDevices()
+            {
+            using (MockContext context = MockContext.Start(this.GetType().FullName))
+            {
+                var testBase = new StorSimple8000SeriesTestBase(context);
+                var devices = Helpers.CheckAndGetConfiguredDevices(testBase, requiredCount: 1);
+                var firstDeviceName = devices.First().Name;
+
+                try
+                {
+                    //Create Time Settings
+                    Helpers.AuthorizeDeviceForRollover(
+                        testBase,
+                        firstDeviceName);
+                }
+
+                catch (Exception e)
+                {
+                    Assert.Null(e);
+                }
+
             }
         }
     }

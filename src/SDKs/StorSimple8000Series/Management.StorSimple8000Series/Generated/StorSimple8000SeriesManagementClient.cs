@@ -361,7 +361,7 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
             Volumes = new VolumesOperations(this);
             StorageAccountCredentials = new StorageAccountCredentialsOperations(this);
             BaseUri = new System.Uri("https://management.azure.com");
-            ApiVersion = "2017-05-15";
+            ApiVersion = "2017-06-01";
             AcceptLanguage = "en-US";
             LongRunningOperationRetryTimeout = 30;
             GenerateClientRequestId = true;
