@@ -272,5 +272,31 @@ namespace StorSimple8000Series.Tests
                 }
             }
         }
+
+        [Fact]
+        public void TestServiceDataEncryptionKeyRooloverOnConfiguredDevices()
+            {
+            using (MockContext context = MockContext.Start(this.GetType().FullName))
+            {
+                var testBase = new StorSimple8000SeriesTestBase(context);
+                var deviceNames = Helpers.CheckAndGetConfiguredDevices1(testBase, minimumRequiredConfiguredDevices: 1);
+                var firstDeviceName = deviceNames[0];
+
+                try
+                {
+                    //Create Time Settings
+                    Helpers.AuthorizeDeviceForRollover(
+                        testBase,
+                        firstDeviceName);
+                }
+
+                catch (Exception e)
+                {
+                    Assert.Null(e);
+                }
+
+            }
+
+        }
     }
 }

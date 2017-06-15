@@ -385,6 +385,27 @@ namespace StorSimple8000Series.Tests
 
         #endregion
 
+        #region SEK Rollover
+
+        /// <summary>
+        /// Authorize device for service data encryption key rollover.
+        /// </summary>
+        /// <param name="testBase"></param>
+        /// <param name="deviceName"></param>
+        public static void AuthorizeDeviceForRollover(
+            StorSimple8000SeriesTestBase testBase,
+            string deviceName)
+        {
+            testBase.Client.Devices.AuthorizeForServiceEncryptionKeyRollover(
+                deviceName.GetDoubleEncoded(),
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+        }
+
+
+        #endregion
+
         #region GetMetrics Calls
 
         public static IEnumerable<Metrics> GetManagerMetrics(StorSimple8000SeriesTestBase testBase, MetricDefinition metricDefinition)
