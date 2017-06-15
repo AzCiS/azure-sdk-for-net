@@ -328,34 +328,6 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
         /// </exception>
         Task<AzureOperationResponse<IEnumerable<MetricDefinition>>> ListMetricDefinitionWithHttpMessagesAsync(string deviceName, string resourceGroupName, string managerName, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
         /// <summary>
-        /// Triggers collection of support package on a device.
-        /// </summary>
-        /// <param name='deviceName'>
-        /// The device name
-        /// </param>
-        /// <param name='parameters'>
-        /// The publish support package request.
-        /// </param>
-        /// <param name='resourceGroupName'>
-        /// The resource group name
-        /// </param>
-        /// <param name='managerName'>
-        /// The manager name
-        /// </param>
-        /// <param name='customHeaders'>
-        /// The headers that will be added to request.
-        /// </param>
-        /// <param name='cancellationToken'>
-        /// The cancellation token.
-        /// </param>
-        /// <exception cref="Microsoft.Rest.Azure.CloudException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        Task<AzureOperationResponse> PublishSupportPackageWithHttpMessagesAsync(string deviceName, SupportPackageRequest parameters, string resourceGroupName, string managerName, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
-        /// <summary>
         /// Scans for updates on the device.
         /// </summary>
         /// <param name='deviceName'>
@@ -572,34 +544,6 @@ namespace Microsoft.Azure.Management.StorSimple8000Series
         /// Thrown when a required parameter is null
         /// </exception>
         Task<AzureOperationResponse> BeginInstallUpdatesWithHttpMessagesAsync(string deviceName, string resourceGroupName, string managerName, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
-        /// <summary>
-        /// Triggers collection of support package on a device.
-        /// </summary>
-        /// <param name='deviceName'>
-        /// The device name
-        /// </param>
-        /// <param name='parameters'>
-        /// The publish support package request.
-        /// </param>
-        /// <param name='resourceGroupName'>
-        /// The resource group name
-        /// </param>
-        /// <param name='managerName'>
-        /// The manager name
-        /// </param>
-        /// <param name='customHeaders'>
-        /// The headers that will be added to request.
-        /// </param>
-        /// <param name='cancellationToken'>
-        /// The cancellation token.
-        /// </param>
-        /// <exception cref="Microsoft.Rest.Azure.CloudException">
-        /// Thrown when the operation returned an invalid status code
-        /// </exception>
-        /// <exception cref="Microsoft.Rest.ValidationException">
-        /// Thrown when a required parameter is null
-        /// </exception>
-        Task<AzureOperationResponse> BeginPublishSupportPackageWithHttpMessagesAsync(string deviceName, SupportPackageRequest parameters, string resourceGroupName, string managerName, Dictionary<string, List<string>> customHeaders = null, CancellationToken cancellationToken = default(CancellationToken));
         /// <summary>
         /// Scans for updates on the device.
         /// </summary>
