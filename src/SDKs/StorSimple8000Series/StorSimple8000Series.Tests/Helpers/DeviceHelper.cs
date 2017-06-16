@@ -81,5 +81,86 @@ namespace StorSimple8000Series.Tests
 
             Assert.True(device == null, "Device deletion was not successful.");
         }
+		
+		/// <summary>
+        /// Get list of devices.
+        /// </summary>
+        public static IEnumerable<Device> GetDevices(StorSimple8000SeriesTestBase testBase)
+        {
+            return testBase.Client.Devices.ListByManager(
+                testBase.ResourceGroupName,
+                testBase.ManagerName,
+                "details");
+        }
+
+		/// <summary>
+        /// Get details of a particular device.
+        /// </summary>
+        public static Device GetByName(StorSimple8000SeriesTestBase testBase, string deviceName)
+        {
+            return testBase.Client.Devices.Get(
+                deviceName,
+                testBase.ResourceGroupName,
+                testBase.ManagerName,
+                "details");
+        }
+
+		/// <summary>
+        /// Complete mandatory configuration of a device.
+        /// </summary>
+        public static void ConfigureDevice(StorSimple8000SeriesTestBase testBase, string deviceName)
+        {
+            ConfigureDeviceRequest configureRequest = new ConfigureDeviceRequest();
+            configureRequest.CurrentDeviceName = deviceName;
+            configureRequest.FriendlyName = deviceName;
+            configureRequest.TimeZone = "Pacific Standard Time";
+            configureRequest.DnsSettings = null;
+            NetworkInterfaceData0Settings data0NetworkSetting = new NetworkInterfaceData0Settings();
+            data0NetworkSetting.ControllerZeroIp = "10.168.220.227";
+            data0NetworkSetting.ControllerOneIp = "10.168.220.228";
+            configureRequest.NetworkInterfaceData0Settings = data0NetworkSetting;
+
+            testBase.Client.Devices.Configure(
+                configureRequest,
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+        }
+
+		/// <summary>
+        /// Update the device description.
+        /// </summary>
+        public static void UpdateDevice(StorSimple8000SeriesTestBase testBase, string deviceName, string description)
+        {
+            DevicePatch devicePatch = new DevicePatch();
+            devicePatch.DeviceDescription = description;
+
+            testBase.Client.Devices.Update(
+                deviceName,
+                devicePatch,
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+        }
+
+		/// <summary>
+        /// Deactivates the device.
+        /// </summary>
+        public static void Deactivate(StorSimple8000SeriesTestBase testBase, string deviceName)
+        {
+            testBase.Client.Devices.Deactivate(
+                deviceName,
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+        }
+
+		/// <summary>
+        /// Deletes the device.
+        /// </summary>
+        public static void Delete(StorSimple8000SeriesTestBase testBase, string deviceName)
+        {
+            testBase.Client.Devices.Delete(
+                deviceName,
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+        }
     }
 }

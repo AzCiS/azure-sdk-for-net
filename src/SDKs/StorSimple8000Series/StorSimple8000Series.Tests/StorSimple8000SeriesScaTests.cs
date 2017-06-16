@@ -1,0 +1,294 @@
+using System;
+using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
+using Microsoft.Azure.Management.StorSimple8000Series;
+using Microsoft.Azure.Test.HttpRecorder;
+using Microsoft.Azure.Management.Compute;
+using Microsoft.Azure.Management.Network;
+using System.Collections.Generic;
+using Microsoft.Azure.Management.StorSimple8000Series.Models;
+using Microsoft.Azure.Management.Network.Models;
+using Microsoft.Azure.Management.Compute.Models;
+using System.Text;
+using Xunit;
+using System.Linq;
+using Xunit.Abstractions;
+using Xunit.Sdk;
+using System.Reflection;
+using Microsoft.Rest.Azure;
+using System.Threading;
+
+namespace StorSimple8000Series.Tests
+{
+    public class StorSimple8000SeriesScaTest : StorSimpleTestBase
+    {
+        private const string DefaultModelNumber = "8020";
+        protected ComputeManagementClient ComputeClient { get; set; }
+        protected NetworkManagementClient NetworkClient { get; set; }
+
+        public StorSimple8000SeriesScaTest(ITestOutputHelper testOutputHelper) : base(testOutputHelper)
+        {
+            this.ComputeClient = this.Context.GetServiceClient<ComputeManagementClient>();
+            this.NetworkClient = this.Context.GetServiceClient<NetworkManagementClient>();
+        }
+
+        [Fact]
+        public void TestCreateStorSimpleCloudAppliance()
+        {
+            var uniqueName = "ScaSdkTest" + Guid.NewGuid().ToString().Substring(0, 4);
+            try
+            {
+                // Prepare
+                // Get Device Registration Key
+                var activationKey = this.Client.Managers.GetActivationKey(this.ResourceGroupName, this.ManagerName);
+
+                // Get Cloud Aplliance Configurations
+                var configuration = this.GetScaConfigurationForModel();
+
+                // Create Vnet if not exist already
+                this.CreateDefaultVnetIfNotExist();
+
+                // Act
+                // Trigger Cloud Appliance creation Job
+                // This will wait till SCA is created and reistered
+                var jobName = this.TriggerScaCreationAndReturnName(uniqueName);
+
+                //Create NIC required for VM creation
+                var nicId = this.CreateNicAndReturnId(uniqueName);
+
+                //Create VM
+                this.CreateVm(uniqueName, activationKey.ActivationKey, nicId, configuration);
+
+                // Validate                
+                // Track job to completion on the basis of device status, because of one bug in service
+                var device = this.TrackScaJobByDeviceStatus(uniqueName);
+                // Validate device status to be Ready to Setup
+                Assert.NotNull(device);
+                Assert.Equal(device.Status, DeviceStatus.ReadyToSetup);
+                
+                // Get job and validate if status is succeeded
+                var job = this.Client.Jobs.Get(uniqueName, jobName, this.ResourceGroupName, this.ManagerName);
+                Assert.Equal(job.JobType, JobType.CreateCloudAppliance);
+                Assert.Equal(job.Status, JobStatus.Succeeded);
+            }
+            catch (Exception ex)
+            {
+                Assert.True(false, ex.Message);
+            }
+            finally
+            {
+                try
+                {
+                    // Cleanup (TODO: Do get before cleanup?)
+                    // Deactivate device
+                    this.Client.Devices.Deactivate(uniqueName, this.ResourceGroupName, this.ManagerName);
+
+                    // Delete device
+                    this.Client.Devices.Delete(uniqueName, this.ResourceGroupName, this.ManagerName);
+
+                    // Delete VM
+                    this.ComputeClient.VirtualMachines.Delete(this.ResourceGroupName, uniqueName);
+
+                    // Delete NIC
+                    this.NetworkClient.NetworkInterfaces.Delete(this.ResourceGroupName, uniqueName);
+                }
+                catch (Exception ex)
+                {
+                    Assert.True(false, ex.Message);
+                }
+            }
+        }
+
+        #region Helper methods
+
+        public Device TrackScaJobByDeviceStatus(string deviceName)
+        {
+            Device device = null;
+            do{
+                Thread.Sleep(DefaultWaitingTimeInMs);
+                device = this.Client.Devices.Get(deviceName, this.ResourceGroupName, this.ManagerName);
+            }
+            while(device != null && device.Status == DeviceStatus.Provisioning);
+
+            return device;
+        }
+
+        protected string TriggerScaCreationAndReturnName(string name)
+        {
+            var cloudAppliance = new CloudAppliance()
+            {
+                Name = name,
+                ModelNumber = DefaultModelNumber,
+                VnetRegion = "West US" // hardcoding as no funcitonal significance
+            };
+
+            this.Client.CloudAppliances.BeginProvision(cloudAppliance, this.ResourceGroupName, this.ManagerName);
+
+            // Only one job will be there for this device
+            var deviceJobs = this.Client.Jobs.ListByDevice(name, this.ResourceGroupName, this.ManagerName);
+            return deviceJobs.ElementAt(0).Name;
+        }
+
+        protected CloudApplianceConfiguration GetScaConfigurationForModel(string modelNumber = DefaultModelNumber)
+        {
+            var configurations = this.Client.CloudAppliances.ListSupportedConfigurations(this.ResourceGroupName, this.ManagerName);
+            return configurations.FirstOrDefault(c => c.ModelNumber == modelNumber);
+        }
+
+        protected string CreateNicAndReturnId(string name, string vnetName = TestConstants.DefaultVirtualNetworkName, string subnetName = TestConstants.DefaultSubnetName)
+        {
+            var subnet = this.NetworkClient.Subnets.Get(this.ResourceGroupName, vnetName, subnetName);
+            var availableIpAddress = this.NetworkClient.VirtualNetworks.CheckIPAddressAvailability(this.ResourceGroupName,
+                vnetName, subnet.AddressPrefix.Split('/')[0]);
+            var nic = this.NetworkClient.NetworkInterfaces.CreateOrUpdate(this.ResourceGroupName, name, new NetworkInterface()
+            {
+                Location = "West US",
+                IpConfigurations = new List<NetworkInterfaceIPConfiguration>()
+                {
+                    new NetworkInterfaceIPConfiguration()
+                    {
+                        Name = "ipconfig1",
+                        PrivateIPAllocationMethod = "Static",
+                        PrivateIPAddress = availableIpAddress.AvailableIPAddresses[0],
+                        Subnet = subnet
+                    }
+                }
+            });
+
+            return nic.Id;
+        }
+
+        protected void CreateVm(string deviceName, string activationKey, string networkInterfaceId, CloudApplianceConfiguration configuration)
+        {
+            this.ComputeClient.VirtualMachines.CreateOrUpdate(this.ResourceGroupName, deviceName, new VirtualMachine()
+            {
+                Location = "West US",
+                OsProfile = new OSProfile()
+                {
+                    AdminUsername = "hcstestuser",
+                    AdminPassword = "StorSime1StorSim1",
+                    ComputerName = deviceName,
+                    CustomData = GetVmCustomData(deviceName, activationKey, configuration)
+                },
+                HardwareProfile = new HardwareProfile()
+                {
+                    VmSize = configuration.SupportedVmTypes[0]
+                },
+                NetworkProfile = new NetworkProfile()
+                {
+                    NetworkInterfaces = new List<NetworkInterfaceReference>()
+                    {
+                        new NetworkInterfaceReference()
+                        {
+                            Id = networkInterfaceId
+                        }
+                    }
+                },
+                StorageProfile = new StorageProfile()
+                {
+                    ImageReference = new ImageReference()
+                    {
+                        Offer = configuration.SupportedVmImages[0].Offer,
+                        Publisher = configuration.SupportedVmImages[0].Publisher,
+                        Sku = configuration.SupportedVmImages[0].Sku,
+                        Version = configuration.SupportedVmImages[0].Version
+                    },
+                    OsDisk = new OSDisk()
+                    {
+                        Name = deviceName + "os",
+                        CreateOption = DiskCreateOptionTypes.FromImage,
+                        Caching = CachingTypes.ReadWrite,
+                        ManagedDisk = new ManagedDiskParameters()
+                        {
+                            StorageAccountType = StorageAccountTypes.PremiumLRS //configuration.SupportedStorageAccountTypes[0]
+                        }
+                    },
+                    DataDisks = GetVmDataDisks(4, configuration, deviceName)
+                }
+            });
+        }
+
+        protected void CreateDefaultVnetIfNotExist()
+        {
+            VirtualNetwork vnet = null;
+            try
+            {
+                vnet = this.NetworkClient.VirtualNetworks.Get(this.ResourceGroupName, TestConstants.DefaultVirtualNetworkName);
+            }
+            catch(CloudException ex)
+            {
+                // Error code is not ResourceNotFound, then unexpected failure and hence rethrowing exception
+                if(ex.Body.Code != "ResourceNotFound")
+                {
+                    throw;
+                }
+            }
+
+            if (vnet == null)
+            {
+                var vnetName = TestConstants.DefaultVirtualNetworkName;
+                var subnetName = TestConstants.DefaultSubnetName;
+                this.NetworkClient.VirtualNetworks.CreateOrUpdate(this.ResourceGroupName, vnetName, new VirtualNetwork()
+                {
+                    Location = "West US",
+                    AddressSpace = new AddressSpace()
+                    {
+                        AddressPrefixes = new List<string> { "10.1.0.0/16" }
+                    },
+                    Subnets = new List<Subnet>{
+                        new Subnet(){
+                            Name = subnetName,
+                            AddressPrefix = "10.1.0.0/24"
+                        }
+                    }
+                });
+            }
+        }
+
+        private static string Base64Encode(string plainText)
+        {
+            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            return System.Convert.ToBase64String(plainTextBytes);
+        }
+
+        private static string GetVmCustomData(string trackingDetails, string activationKey, CloudApplianceConfiguration configuration)
+        {
+            var strBuilder = new StringBuilder();
+            strBuilder.AppendLine();
+            strBuilder.AppendLine($"ModelNumber={configuration.ModelNumber}");
+            strBuilder.AppendLine($"TrackingId={Guid.NewGuid()}");
+            strBuilder.AppendLine($"RegistrationKey={activationKey}");
+            return Base64Encode(strBuilder.ToString());
+        }
+
+        private static IList<DataDisk> GetVmDataDisks(int numberOfDisks, CloudApplianceConfiguration configuration, string name)
+        {
+            var disks = new List<DataDisk>();
+            for (int i = 0; i < numberOfDisks; i++)
+            {
+                disks.Add(new DataDisk()
+                {
+                    CreateOption = DiskCreateOptionTypes.Empty,
+                    Lun = i,
+                    Name = name + "datadisk" + (i + 1),
+                    ManagedDisk = new ManagedDiskParameters()
+                    {
+                        StorageAccountType = StorageAccountTypes.PremiumLRS //configuration.SupportedStorageAccountTypes[0]
+                    },
+                    DiskSizeGB = 1023
+                });
+            }
+
+            return disks;
+        }
+
+        #endregion
+
+        // Dispose all disposable objects
+        public override void Dispose()
+        {
+            this.NetworkClient.Dispose();
+            this.ComputeClient.Dispose();
+            base.Dispose();
+        }
+    }
+}
