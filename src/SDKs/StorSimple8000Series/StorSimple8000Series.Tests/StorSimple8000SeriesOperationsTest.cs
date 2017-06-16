@@ -296,16 +296,21 @@ namespace StorSimple8000Series.Tests
                 try
                 {
                     //Create Time Settings
-                    var timeSettings = Helpers.CreateTimeSettings(testBase, deviceName);
+                    var timeSettings = Helpers.CreateAndValidateTimeSettings(
+                        testBase,
+                        deviceName);
 
                     //Create Alert Settings
-                    var alertSettings = Helpers.CreateAlertSettings(testBase, deviceName);
+                    var alertSettings = Helpers.CreateAndValidateAlertSettings(testBase,
+                        deviceName);
 
                     //Create Network Settings
-                    var bws = Helpers.CreateNetworkSettings(testBase, deviceName);
+                    var networkSettings = Helpers.CreateAndValidateNetworkSettings(testBase,
+                        deviceName);
 
                     //Create Security Settings
-                    var securitySettings = Helpers.CreateSecuritySettings(testBase, deviceName);
+                    var securitySettings = Helpers.CreateAndValidateSecuritySettings(testBase,
+                        deviceName);
                 }
                 catch (Exception e)
                 {
@@ -326,12 +331,12 @@ namespace StorSimple8000Series.Tests
 
                 try
                 {
-                    //Authorize device for Key rollover.
+
+                    //Authorize device for rollover
                     Helpers.AuthorizeDeviceForRollover(
                         testBase,
                         firstDeviceName);
                 }
-
                 catch (Exception e)
                 {
                     Assert.Null(e);

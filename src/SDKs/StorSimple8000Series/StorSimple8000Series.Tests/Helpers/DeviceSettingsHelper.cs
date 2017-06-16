@@ -63,7 +63,7 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Create TimeSettings on the Device.
         /// </summary>
-        public static TimeSettings CreateTimeSettings(
+        public static TimeSettings CreateAndValidateTimeSettings(
             StorSimple8000SeriesTestBase testBase,
             string deviceName)
         {
@@ -84,7 +84,7 @@ namespace StorSimple8000Series.Tests
 
             //validation
             Assert.True(timeSettings != null && timeSettings.PrimaryTimeServer.Equals("time.windows.com") &&
-                timeSettings.SecondaryTimeServer.Equals("8.8.8.8") , "Creation of Time Setting was not successful.");
+                timeSettings.SecondaryTimeServer[0].Equals("8.8.8.8") , "Creation of Time Setting was not successful.");
 
             return timeSettings;
         }
@@ -92,7 +92,7 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Create AlertSettings on the Device.
         /// </summary>
-        public static AlertSettings CreateAlertSettings(
+        public static AlertSettings CreateAndValidateAlertSettings(
             StorSimple8000SeriesTestBase testBase,
             string deviceName)
         {
@@ -124,18 +124,28 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Create NetworkSettings on the Device.
         /// </summary>
-        public static NetworkSettings CreateNetworkSettings(
+        public static NetworkSettings CreateAndValidateNetworkSettings(
             StorSimple8000SeriesTestBase testBase,
             string deviceName)
         {
             //TODO: add test data get network settings and set primary DNS from response.
-            DNSSettings dnsSettings = new DNSSettings();
-            NetworkAdapterList networkAdapterList = new NetworkAdapterList();
 
-            NetworkSettingsPatch networkSettings = new NetworkSettingsPatch();
+            var networkSettingsBeforeUpdate = testBase.Client.DeviceSettings.GetNetworkSettings(
+                deviceName.GetDoubleEncoded(),
+                    testBase.ResourceGroupName,
+                    testBase.ManagerName
+            );
+            
+            DNSSettings dnsSettings = new DNSSettings();
+            dnsSettings.PrimaryDnsServer = networkSettingsBeforeUpdate.DnsSettings.PrimaryDnsServer;
+            dnsSettings.SecondaryDnsServers = new List<string>() { "8.8.8.8" };
+
+            NetworkSettingsPatch networkSettingsPatch = new NetworkSettingsPatch();
+            networkSettingsPatch.DnsSettings = dnsSettings;
+            
             return testBase.Client.DeviceSettings.UpdateNetworkSettings(
                     deviceName.GetDoubleEncoded(),
-                    networkSettings,
+                    networkSettingsPatch,
                     testBase.ResourceGroupName,
                     testBase.ManagerName);
         }
@@ -143,25 +153,24 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Create SecuritySettings on the Device.
         /// </summary>
-        public static SecuritySettings CreateSecuritySettings(
+        public static SecuritySettings CreateAndValidateSecuritySettings(
             StorSimple8000SeriesTestBase testBase,
             string deviceName)
         {
             RemoteManagementSettingsPatch remoteManagementSettings = new RemoteManagementSettingsPatch(RemoteManagementModeConfiguration.HttpsAndHttpEnabled);
             AsymmetricEncryptedSecret deviceAdminpassword = testBase.Client.Managers.GetAsymmetricEncryptedSecret(testBase.ResourceGroupName, testBase.ManagerName, "test-secret");
-            AsymmetricEncryptedSecret snapshotmanagerPassword = testBase.Client.Managers.GetAsymmetricEncryptedSecret(testBase.ResourceGroupName, testBase.ManagerName, "test-secret1");
-            
+            AsymmetricEncryptedSecret snapshotmanagerPassword = testBase.Client.Managers.GetAsymmetricEncryptedSecret(testBase.ResourceGroupName, testBase.ManagerName, "test-secret1");          
 
             ChapSettings chapSettings = new ChapSettings("test-initiator-user",
                 testBase.Client.Managers.GetAsymmetricEncryptedSecret(testBase.ResourceGroupName, testBase.ManagerName, "test-chapsecret1"),
             "test-target-user",
                 testBase.Client.Managers.GetAsymmetricEncryptedSecret(testBase.ResourceGroupName, testBase.ManagerName, "test-chapsecret2"));
 
-            SecuritySettingsPatch securitySettingsToCreate = new SecuritySettingsPatch(remoteManagementSettings, deviceAdminpassword, snapshotmanagerPassword, chapSettings);
+            SecuritySettingsPatch securitySettingsPatch = new SecuritySettingsPatch(remoteManagementSettings, deviceAdminpassword, snapshotmanagerPassword, chapSettings);
 
             testBase.Client.DeviceSettings.UpdateSecuritySettings(
                     deviceName.GetDoubleEncoded(),
-                    securitySettingsToCreate,
+                    securitySettingsPatch,
                     testBase.ResourceGroupName,
                     testBase.ManagerName);
 
