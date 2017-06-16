@@ -309,5 +309,80 @@ namespace StorSimple8000Series.Tests
 
             }
         }
+		
+		[Fact]
+        public void TestDeviceUpdates()
+        {
+            using (MockContext context = MockContext.Start(this.GetType().FullName))
+            {
+                var testBase = new StorSimple8000SeriesTestBase(context);
+
+                //checking for prerequisites
+                var devices = Helpers.CheckAndGetConfiguredDevices(testBase, requiredCount: 1);
+                var deviceName = devices.First().Name;
+
+                //Scan for updates
+                Helpers.ScanForUpdates(testBase, deviceName);
+
+                //Get update summary
+                var updateSummary = Helpers.GetUpdateSummary(testBase, deviceName);
+
+                if (updateSummary.RegularUpdatesAvailable == true)
+                {
+                    //Install updates
+                    Helpers.InstallUpdates(testBase, deviceName);
+                }
+            }
+        }
+
+        [Fact]
+        public void TestDeviceHardwareComponents()
+        {
+            using (MockContext context = MockContext.Start(this.GetType().FullName))
+            {
+                var testBase = new StorSimple8000SeriesTestBase(context);
+
+                //checking for prerequisites
+                var devices = Helpers.CheckAndGetConfiguredDevices(testBase, requiredCount: 1);
+                var deviceName = devices.First().Name;
+
+                //Get hardware component groups
+                var hardwareComponentGroups = Helpers.GetHardwareComponentGroups(testBase, deviceName);
+
+                //Change controller power state
+                Helpers.ChangeControllerPowerState(testBase, deviceName, "Controller0Components", ControllerId.Controller0, ControllerPowerStateAction.Start);
+            }
+        }
+
+        [Fact]
+        public void TestDeviceOperations()
+        {
+            using (MockContext context = MockContext.Start(this.GetType().FullName))
+            {
+                var testBase = new StorSimple8000SeriesTestBase(context);
+
+                //List devices
+                var devices = Helpers.GetDevices(testBase);
+                var deviceName = devices.Where(d => d.Status == DeviceStatus.ReadyToSetup).First().Name;
+
+                //Get device
+                var device = Helpers.GetByName(testBase, deviceName);
+
+                //Configure device
+                Helpers.ConfigureDevice(testBase, deviceName);
+
+                //Update device
+                Helpers.UpdateDevice(testBase, deviceName, "updated device description");
+
+                //Get device
+                device = Helpers.GetByName(testBase, deviceName);
+
+                //Deactivate device
+                Helpers.Deactivate(testBase, deviceName);
+
+                //Delete device
+                Helpers.Delete(testBase, deviceName);
+            }
+        }
     }
 }

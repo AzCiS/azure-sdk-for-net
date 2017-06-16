@@ -8,6 +8,8 @@ namespace StorSimple8000Series.Tests
     {
         public const string DefaultResourceGroupName = "ResourceGroupForSDKTest";
         public const string DefaultManagerName = "ManagerForSDKTest1";
+        public const string DefaultVirtualNetworkName = "ClientSdkTest";
+        public const string DefaultSubnetName = "Default";
         public const string DefaultStorageAccountName = "safortestrecording";
         public const string DefaultStorageAccountAccessKey = "HvESZmug6HAx5tOmbtpOJsm/Mu/LdtsUcRaABGXqqJNnzV0WmzkLVzdrZjFZ3RkLAs+Oa00aM/9y8Xn47u6w/w==";
         public const string DefaultStorageAccountEndPoint = "blob.core.windows.net";
