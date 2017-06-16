@@ -69,6 +69,17 @@ namespace StorSimple8000Series.Tests
             return configuredDeviceNames;
         }
 
+        public static Device CheckAndGetConfiguredDevices(StorSimple8000SeriesTestBase testBase, string deviceName)
+        {
+            var devices = testBase.Client.Devices.ListByManager(testBase.ResourceGroupName, testBase.ManagerName);
+
+            var device = devices.FirstOrDefault(d => d.Status.Equals(DeviceStatus.Online) && d.Name.Equals(deviceName));
+
+            Assert.True(device != null, string.Format("Could not configured device with the specified device-name: {0}", deviceName));
+
+            return device;
+        }
+
         public static IEnumerable<VolumeContainer> CheckAndGetVolumeContainers(StorSimple8000SeriesTestBase testBase, string deviceName, int requiredCount)
         {
             var volumeContainers = testBase.Client.VolumeContainers.ListByDevice(

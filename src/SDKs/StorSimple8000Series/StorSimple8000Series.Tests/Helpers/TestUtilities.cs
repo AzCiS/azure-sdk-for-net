@@ -23,8 +23,7 @@ namespace StorSimple8000Series.Tests
 
         public static string GenerateRandomName(string prefix)
         {
-            var random = new Random();
-            return prefix + random.Next();
+            return prefix + Guid.NewGuid().ToString().Substring(0, 4);
         }
     }
 }

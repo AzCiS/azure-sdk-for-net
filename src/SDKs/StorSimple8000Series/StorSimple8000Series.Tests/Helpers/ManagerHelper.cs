@@ -35,12 +35,51 @@ namespace StorSimple8000Series.Tests
             return manager;
         }
 
-        /// <summary>
-        /// Get the device registration key.
-        /// </summary>
         public static string GetDeviceRegistrationKey(StorSimple8000SeriesTestBase testBase)
         {
             return testBase.Client.Managers.GetDeviceRegistrationKey(testBase.ResourceGroupName, testBase.ManagerName);
+        }
+
+        public static string RegenerateActivationKey(StorSimple8000SeriesTestBase testBase)
+        {
+            return testBase.Client.Managers.RegenerateActivationKey(testBase.ResourceGroupName, testBase.ManagerName).ActivationKey;
+        }
+
+        public static IEnumerable<Manager> ListManagerBySubscription(StorSimple8000SeriesTestBase testBase)
+        {
+            return testBase.Client.Managers.List();
+        }
+
+        public static IEnumerable<Manager> ListManagerByResourceGroup(StorSimple8000SeriesTestBase testBase)
+        {
+            return testBase.Client.Managers.ListByResourceGroup(testBase.ResourceGroupName);
+        }
+
+        public static ManagerExtendedInfo GetAndUpdateManagerExtendedInfo(StorSimple8000SeriesTestBase testBase)
+        {
+            var extendedInfo = testBase.Client.Managers.GetExtendedInfo(testBase.ResourceGroupName, testBase.ManagerName);
+            extendedInfo.Algorithm = "SHA256";
+            string ifMatchETag = extendedInfo.Etag;
+
+            return testBase.Client.Managers.UpdateExtendedInfo(
+                extendedInfo,
+                testBase.ResourceGroupName,
+                testBase.ManagerName,
+                ifMatchETag);
+        }
+
+        public static Manager UpdateManager(StorSimple8000SeriesTestBase testBase, string managerName, string tagName, string tagValue)
+        {            
+            Dictionary<string, string> Tags = new Dictionary<string, string>();
+            Tags.Add(tagName, tagValue);
+            ManagerPatch managerPatch = new ManagerPatch(Tags);
+
+            var manager = testBase.Client.Managers.Update(
+                managerPatch,
+                testBase.ResourceGroupName,
+                managerName);
+
+            return manager;
         }
 
         /// <summary>
@@ -60,7 +99,7 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Deletes the specified StorSimple Manager.
         /// </summary>
-        public static void DeleteManager(StorSimple8000SeriesTestBase testBase, string managerName)
+        public static void DeleteManagerAndValidate(StorSimple8000SeriesTestBase testBase, string managerName)
         {
             var managerToDelete = testBase.Client.Managers.Get(
                 testBase.ResourceGroupName,
@@ -76,6 +115,5 @@ namespace StorSimple8000Series.Tests
 
             Assert.True(manager == null, "Manager deletion was not successful.");
         }
-
     }
 }

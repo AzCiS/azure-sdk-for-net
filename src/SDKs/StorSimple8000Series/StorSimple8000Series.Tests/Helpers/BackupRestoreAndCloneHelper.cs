@@ -62,13 +62,17 @@ namespace StorSimple8000Series.Tests
                 schNameToObject.Add(schName, bs);
             }
 
-            var schedules = testBase.Client.BackupSchedules.ListByBackupPolicy(
+            //validate one of the schedules
+            var schedule = testBase.Client.BackupSchedules.Get(
                 deviceName.GetDoubleEncoded(),
                 backupPolicy.Name.GetDoubleEncoded(),
+                scheduleNames.First().GetDoubleEncoded(),
                 testBase.ResourceGroupName,
                 testBase.ManagerName);
 
-            Assert.Equal(schedules.Count(), schNameToObject.Count());
+            Assert.True(schedule != null && schedule.Name.Equals(scheduleNames.First()) &&
+                schedule.ScheduleRecurrence.Equals(RecurrenceType.Daily), "Schedule creation was not successful.");
+
             return backupPolicy;
         }
 

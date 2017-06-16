@@ -31,14 +31,9 @@ namespace StorSimple8000Series.Tests
                     sacAccessKeyInPlainText)
             };
 
-            testBase.Client.StorageAccountCredentials.CreateOrUpdate(
+            var sac = testBase.Client.StorageAccountCredentials.CreateOrUpdate(
                 sacNameWithoutDoubleEncoding.GetDoubleEncoded(),
                 sacToCreate,
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
-
-            var sac = testBase.Client.StorageAccountCredentials.Get(
-                sacNameWithoutDoubleEncoding.GetDoubleEncoded(),
                 testBase.ResourceGroupName,
                 testBase.ManagerName);
 
@@ -60,16 +55,12 @@ namespace StorSimple8000Series.Tests
                 InitiatorName = initiatorName
             };
 
-            testBase.Client.AccessControlRecords.CreateOrUpdate(
+            var acr = testBase.Client.AccessControlRecords.CreateOrUpdate(
                 acrNameWithoutDoubleEncoding.GetDoubleEncoded(),
                 acrToCreate,
                 testBase.ResourceGroupName,
                 testBase.ManagerName);
 
-            var acr = testBase.Client.AccessControlRecords.Get(
-                acrNameWithoutDoubleEncoding.GetDoubleEncoded(),
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
 
             Assert.True(acr != null && acr.Name.Equals(acrNameWithoutDoubleEncoding) &&
                 acr.InitiatorName.Equals(initiatorName),
@@ -97,14 +88,9 @@ namespace StorSimple8000Series.Tests
                 Schedules = new List<BandwidthSchedule>() { bandwidthSchedule1 }
             };
 
-            testBase.Client.BandwidthSettings.CreateOrUpdate(
+            var bws = testBase.Client.BandwidthSettings.CreateOrUpdate(
                 bwsName.GetDoubleEncoded(),
                 bwsToCreate,
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
-
-            var bws = testBase.Client.BandwidthSettings.Get(
-                bwsName.GetDoubleEncoded(),
                 testBase.ResourceGroupName,
                 testBase.ManagerName);
 
@@ -118,7 +104,7 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Deletes the specified storage account credential.
         /// </summary>
-        public static void DeleteStorageAccountCredential(StorSimple8000SeriesTestBase testBase, string storageAccountCredentialName)
+        public static void DeleteStorageAccountCredentialAndValidate(StorSimple8000SeriesTestBase testBase, string storageAccountCredentialName)
         {
             var sacToDelete = testBase.Client.StorageAccountCredentials.Get(
                 storageAccountCredentialName.GetDoubleEncoded(),
@@ -142,7 +128,7 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Deletes the specified access control record.
         /// </summary>
-        public static void DeleteAccessControlRecord(StorSimple8000SeriesTestBase testBase, string managerName, string acrName)
+        public static void DeleteAccessControlRecordAndValidate(StorSimple8000SeriesTestBase testBase, string acrName)
         {
             var acrToDelete = testBase.Client.AccessControlRecords.Get(
                 acrName.GetDoubleEncoded(),
@@ -166,7 +152,7 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Deletes the specified bandwidth setting.
         /// </summary>
-        public static void DeleteBandwidthSetting(StorSimple8000SeriesTestBase testBase, string managerName, string bwsName)
+        public static void DeleteBandwidthSettingAndValidate(StorSimple8000SeriesTestBase testBase, string bwsName)
         {
             var bwsToDelete = testBase.Client.BandwidthSettings.Get(
                 bwsName.GetDoubleEncoded(),

@@ -107,11 +107,18 @@ namespace StorSimple8000Series.Tests
                 testBase.ResourceGroupName,
                 testBase.ManagerName);
 
+            var volumesInDevice = testBase.Client.Volumes.ListByDevice(
+                doubleEncodedDeviceName,
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
             var volumesInVC = testBase.Client.Volumes.ListByVolumeContainer(
                 doubleEncodedDeviceName,
                 volumeContainerToDelete.Name.GetDoubleEncoded(),
                 testBase.ResourceGroupName,
                 testBase.ManagerName);
+            
+            Assert.True(volumesInDevice.Count() >= volumesInVC.Count(), "List operations of volumes was not successful.");
 
             foreach (var v in volumesInVC)
             {
@@ -128,13 +135,6 @@ namespace StorSimple8000Series.Tests
                 volumeContainerToDelete.Name.GetDoubleEncoded(),
                 testBase.ResourceGroupName,
                 testBase.ManagerName);
-
-            var volumes = testBase.Client.Volumes.ListByDevice(
-                doubleEncodedDeviceName,
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
-
-            Assert.True(volumes.Count() == 0, "Deletion of volumes was not successful.");
 
             var volumeContainers = testBase.Client.VolumeContainers.ListByDevice(
                 doubleEncodedDeviceName,
