@@ -97,7 +97,7 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Create TimeSettings on the Device.
         /// </summary>
-        private TimeSettings CreateTimeSettings(string deviceName)
+        private TimeSettings CreateAndValidateTimeSettings(string deviceName)
         {
             TimeSettings timeSettingsToCreate = new TimeSettings("Pacific Standard Time");
             timeSettingsToCreate.PrimaryTimeServer = "time.windows.com";
@@ -124,7 +124,7 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Create AlertSettings on the Device.
         /// </summary>
-        private AlertSettings CreateAlertSettings(string deviceName)
+        private AlertSettings CreateAndValidateAlertSettings(string deviceName)
         {
             AlertSettings alertsettingsToCreate = new AlertSettings(AlertEmailNotificationStatus.Enabled);
             alertsettingsToCreate.AlertNotificationCulture = "en-US";
@@ -154,40 +154,49 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Create NetworkSettings on the Device.
         /// </summary>
-        private NetworkSettings CreateNetworkSettings(string deviceName)
+        private NetworkSettings CreateAndValidateNetworkSettings(string deviceName)
         {
-            //TODO: add test data get network settings and set primary DNS from response.
+            var networkSettingsBeforeUpdate = this.Client.DeviceSettings.GetNetworkSettings(
+                deviceName.GetDoubleEncoded(),
+				this.ResourceGroupName,
+				this.ManagerName
+            );
+            
             DNSSettings dnsSettings = new DNSSettings();
-            NetworkAdapterList networkAdapterList = new NetworkAdapterList();
+            dnsSettings.PrimaryDnsServer = networkSettingsBeforeUpdate.DnsSettings.PrimaryDnsServer;
+            dnsSettings.SecondaryDnsServers = new List<string>() { "8.8.8.8" };
 
-            NetworkSettingsPatch networkSettings = new NetworkSettingsPatch();
-            return this.Client.DeviceSettings.UpdateNetworkSettings(
+            NetworkSettingsPatch networkSettingsPatch = new NetworkSettingsPatch();
+            networkSettingsPatch.DnsSettings = dnsSettings;
+            
+            return testBase.Client.DeviceSettings.UpdateNetworkSettings(
                     deviceName.GetDoubleEncoded(),
-                    networkSettings,
-                    this.ResourceGroupName,
-                    this.ManagerName);
+                    networkSettingsPatch,
+                    testBase.ResourceGroupName,
+                    testBase.ManagerName);
         }
 
         /// <summary>
         /// Create SecuritySettings on the Device.
         /// </summary>
-        private SecuritySettings CreateSecuritySettings(string deviceName)
+        public static SecuritySettings CreateAndValidateSecuritySettings(
+            StorSimple8000SeriesTestBase testBase,
+            string deviceName)
         {
             RemoteManagementSettingsPatch remoteManagementSettings = new RemoteManagementSettingsPatch(RemoteManagementModeConfiguration.HttpsAndHttpEnabled);
             AsymmetricEncryptedSecret deviceAdminpassword = this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "test-secret");
             AsymmetricEncryptedSecret snapshotmanagerPassword = this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "test-secret1");
-
 
             ChapSettings chapSettings = new ChapSettings("test-initiator-user",
                 this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "test-chapsecret1"),
             "test-target-user",
                 this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "test-chapsecret2"));
 
-            SecuritySettingsPatch securitySettingsToCreate = new SecuritySettingsPatch(remoteManagementSettings, deviceAdminpassword, snapshotmanagerPassword, chapSettings);
+            SecuritySettingsPatch securitySettingsPatch = new SecuritySettingsPatch(remoteManagementSettings, deviceAdminpassword, snapshotmanagerPassword, chapSettings);
 
             this.Client.DeviceSettings.UpdateSecuritySettings(
                     deviceName.GetDoubleEncoded(),
-                    securitySettingsToCreate,
+                    securitySettingsPatch,
                     this.ResourceGroupName,
                     this.ManagerName);
 
