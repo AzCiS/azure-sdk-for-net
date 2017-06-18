@@ -1,20 +1,13 @@
 ﻿using System;
 using System.Linq;
-using System.Text;
-using System.Reflection;
 using System.Collections.Generic;
-using System.Threading;
 using System.Linq.Expressions;
 using Xunit;
-using Xunit.Sdk;
 using Xunit.Abstractions;
 using Microsoft.Rest.Azure;
 using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
 using Microsoft.Azure.Management.StorSimple8000Series;
 using Microsoft.Azure.Management.StorSimple8000Series.Models;
-using Microsoft.Azure.Test.HttpRecorder;
-using Microsoft.Azure.Management.Compute;
-using Microsoft.Azure.Management.Network;
 using Microsoft.Rest.Azure.OData;
 
 namespace StorSimple8000Series.Tests
@@ -27,7 +20,8 @@ namespace StorSimple8000Series.Tests
         public void TestAlerts()
         {
             //checking for prerequisites
-            var deviceName = TestConstants.DefaultDeviceName;
+            var device = Helpers.CheckAndGetConfiguredDevices(this, TestConstants.DefaultDeviceName);
+            var deviceName = device.Name;
 
             try
             {

@@ -47,7 +47,7 @@ namespace StorSimple8000Series.Tests
                 var backupPolicy = CreateBackupPolicy(deviceName, backupPolicyName, volumeIds);
 
                 // Take manual backup
-                var backup = BackupNow(deviceName, backupPolicy.Name);
+                var backup = BackupNow(deviceName, backupPolicy.Name, BackupType.CloudSnapshot);
 
                 // Restore
                 RestoreBackup(deviceName, backup.Name);
@@ -122,11 +122,9 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Helper method to trigger a manual backup.
         /// </summary>
-        private Backup BackupNow(string deviceName, string policyName)
+        private Backup BackupNow(string deviceName, string policyName, BackupType backupType)
         {
-            string backupType = BackupType.CloudSnapshot.ToString();
-            var jobStartTime = DateTime.UtcNow;
-
+            //get the backup-policy
             var backupPolicy = this.Client.BackupPolicies.Get(
                 deviceName,
                 policyName,
@@ -134,28 +132,25 @@ namespace StorSimple8000Series.Tests
                 this.ManagerName);
 
             // Take the backup
+            var jobStartTime = DateTime.UtcNow;
             this.Client.BackupPolicies.BackupNow(
                 deviceName.GetDoubleEncoded(),
                 policyName.GetDoubleEncoded(),
-                backupType,
+                backupType.ToString(),
                 this.ResourceGroupName,
                 this.ManagerName);
 
-            // Get the backup job
-            var allBackupJobs = this.Client.Jobs.ListByDevice(
-                deviceName,
-                this.ResourceGroupName,
-                this.ManagerName);
+            // validate backup job success
+            var allBackupJobs = this.GetAllJobsByType(deviceName, JobType.ManualBackup);
 
-            var backupJob =
-                allBackupJobs.FirstOrDefault(
+            var backupJob = allBackupJobs.FirstOrDefault(
                     j =>
                     j.StartTime > jobStartTime
                     && j.EntityLabel.Equals(policyName, StringComparison.CurrentCultureIgnoreCase));
 
             Assert.NotNull(backupJob);
 
-            // Get the backup
+            // Get backup
             Expression<Func<BackupFilter, bool>> filter = backupFilter =>
                 backupFilter.CreatedTime >= jobStartTime &&
                 backupFilter.BackupPolicyId == backupPolicy.Id;
@@ -172,132 +167,56 @@ namespace StorSimple8000Series.Tests
         }
 
         /// <summary>
-        /// Helper method to restore volumes by backup.
+        /// Helper method to restore volumes by backup
         /// </summary>
         private void RestoreBackup(string deviceName, string backupName)
         {
-            DateTime jobStartTime = DateTime.UtcNow;
-
-            // Get the backups by volume name
+            // Get the backup
             var backups = this.Client.Backups.ListByDevice(
                                 deviceName.GetDoubleEncoded(),
                                 this.ResourceGroupName,
                                 this.ManagerName);
-
-            Assert.NotNull(backups);
-            Assert.NotEmpty(backups);
-
-            var backup = backups.FirstOrDefault();
-
+            var backup = backups.FirstOrDefault(b => b.Name.Equals(backupName));
             Assert.NotNull(backup);
 
-            // Get volumes in the device in one call
-            var volumeContainersByDevice = this.Client.VolumeContainers.ListByDevice(
-                deviceName.GetDoubleEncoded(),
-                this.ResourceGroupName,
-                this.ManagerName);
-
-            var volumesByDevice = this.Client.Volumes.ListByDevice(
-                deviceName.GetDoubleEncoded(),
-                this.ResourceGroupName,
-                this.ManagerName);
-
-            // First delete the volumes associated with backup
-            foreach (BackupElement be in backup.Elements)
-            {
-                var volumeContainer = volumeContainersByDevice.FirstOrDefault(vc =>
-                                    vc.Id.Equals(be.VolumeContainerId));
-
-                Assert.NotNull(volumeContainer);
-
-                var volumeToDelete = volumesByDevice.FirstOrDefault(v =>
-                                v.Name.Equals(be.VolumeName));
-
-                Assert.NotNull(volumeToDelete);
-
-                // Diable the volume before deleting
-                volumeToDelete.VolumeStatus = VolumeStatus.Offline;
-                this.Client.Volumes.CreateOrUpdate(
-                    deviceName.GetDoubleEncoded(),
-                    volumeContainer.Name.GetDoubleEncoded(),
-                    volumeToDelete.Name,
-                    volumeToDelete,
-                    this.ResourceGroupName,
-                    this.ManagerName);
-
-                this.Client.Volumes.Delete(
-                                        deviceName.GetDoubleEncoded(),
-                                        volumeContainer.Name.GetDoubleEncoded(),
-                                        be.VolumeName.GetDoubleEncoded(),
-                                        this.ResourceGroupName,
-                                        this.ManagerName);
-            }
-
+            //restore the backup
+            DateTime jobStartTime = DateTime.UtcNow;
             this.Client.Backups.Restore(
                                 deviceName.GetDoubleEncoded(),
                                 backup.Name.GetDoubleEncoded(),
                                 this.ResourceGroupName,
                                 this.ManagerName);
 
-            var volumes = this.Client.Volumes.ListByDevice(
-                                deviceName.GetDoubleEncoded(),
-                                this.ResourceGroupName,
-                                this.ManagerName);
+            // validate restore job success
+            var backupPolicy = this.Client.BackupPolicies.ListByDevice(deviceName, this.ResourceGroupName, this.ManagerName).
+                FirstOrDefault(bp => bp.Id.Equals(backup.BackupPolicyId));
+            var allRestoreJobs = this.GetAllJobsByType(deviceName, JobType.RestoreBackup);
+            var restoreJob = allRestoreJobs.FirstOrDefault(
+                    j =>
+                    j.StartTime > jobStartTime
+                    && j.EntityLabel.Equals(backupPolicy.Name, StringComparison.CurrentCultureIgnoreCase));
 
-            Assert.NotNull(volumes);
-            Assert.NotEmpty(volumes);
-
-            var volumesAfterRestore = this.Client.Volumes.ListByDevice(
-                                                deviceName.GetDoubleEncoded(),
-                                                this.ResourceGroupName,
-                                                this.ManagerName);
-
-            Assert.NotNull(volumesAfterRestore);
-            Assert.NotEmpty(volumesAfterRestore);
-
-            // Validate that the each element has corresponding volume
-            foreach (BackupElement be in backup.Elements)
-            {
-                var vol = volumesAfterRestore.FirstOrDefault(v =>
-                    v.Name.Equals(
-                        be.VolumeName,
-                        StringComparison.CurrentCultureIgnoreCase));
-
-                Assert.NotNull(vol);
-            }
+            Assert.True(restoreJob != null && restoreJob.Status.Equals(JobStatus.Succeeded), "Restore was not successful.");
         }
 
         private void CloneVolume(string deviceName, string volumeName)
         {
-            string cloneVolumeName = "CloneVolForSDKTest";
+            string cloneVolumeName = "Cloned" + volumeName;
 
-            // Get the device
-            var device = this.Client.Devices.Get(
-                deviceName.GetDoubleEncoded(),
-                this.ResourceGroupName,
-                this.ManagerName);
+            //get device
+            var device = this.Client.Devices.Get(deviceName.GetDoubleEncoded(), this.ResourceGroupName, this.ManagerName);
+            Assert.NotNull(device);
 
-            // Get the backups for the volume
+            // Get the latest backups for the volume
             var backups = GetBackupsByVolume(deviceName, volumeName);
-
             Assert.NotNull(backups);
-
-            // Use backup and choose first element
             var backup = backups.First();
-
             Assert.NotNull(backup);
             Assert.NotNull(backup.Elements);
 
-            var backupElement = backup.Elements.FirstOrDefault();
+            //get the backup-element corresponding to the volume
+            var backupElement = backup.Elements.FirstOrDefault(e => e.VolumeName.Equals(volumeName));
             Assert.NotNull(backupElement);
-
-            var volumes = this.Client.Volumes.ListByDevice(
-                    deviceName.GetDoubleEncoded(),
-                    this.ResourceGroupName,
-                    this.ManagerName);
-
-            var volume = volumes.FirstOrDefault(
-                v => v.Name.Equals(volumeName, StringComparison.CurrentCultureIgnoreCase));
 
             // Prepare clone request and trigger clone
             var cloneRequest = new CloneRequest
@@ -305,7 +224,6 @@ namespace StorSimple8000Series.Tests
                 BackupElement = backupElement,
                 TargetDeviceId = device.Id,
                 TargetVolumeName = cloneVolumeName,
-                TargetAccessControlRecordIds = volume.AccessControlRecordIds
             };
 
             this.Client.Backups.Clone(
@@ -449,19 +367,12 @@ namespace StorSimple8000Series.Tests
                     this.ResourceGroupName,
                     this.ManagerName);
         }
+
         /// <summary>
         /// Helper method to return backups for a given volume
         /// </summary>
         private IEnumerable<Backup> GetBackupsByVolume(string deviceName, string volumeName)
         {
-            // Get the device
-            var device = this.Client.Devices.Get(
-                deviceName.GetDoubleEncoded(),
-                this.ResourceGroupName,
-                this.ManagerName);
-
-            Assert.NotNull(device);
-
             // Get the volume
             var volumes = this.Client.Volumes.ListByDevice(
                                 deviceName.GetDoubleEncoded(),

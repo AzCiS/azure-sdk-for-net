@@ -32,68 +32,23 @@ namespace StorSimple8000Series.Tests
             try
             {
                 //Create Time Settings
-                var timeSettings = CreateTimeSettings(deviceName);
+                var timeSettings = CreateAndValidateTimeSettings(deviceName);
 
                 //Create Alert Settings
-                var alertSettings = CreateAlertSettings(deviceName);
+                var alertSettings = CreateAndValidateAlertSettings(deviceName);
 
                 //Create Network Settings
-                var bws = CreateNetworkSettings(deviceName);
+                var bws = CreateAndValidateNetworkSettings(deviceName);
 
                 //Create Security Settings
-                var securitySettings = CreateSecuritySettings(deviceName);
+                var securitySettings = CreateAndValidateSecuritySettings(deviceName);
             }
             catch (Exception e)
             {
                 Assert.Null(e);
             }
-
         }
-
-        private AlertSettings CheckAndGetDeviceAlertSettings(string deviceName)
-        {
-            var alertSettings = this.Client.DeviceSettings.GetAlertSettings(
-                                    deviceName,
-                                    this.ResourceGroupName,
-                                    this.ManagerName);
-
-            Assert.True(alertSettings != null, string.Format("Alert Settings is not present on device"));
-            return alertSettings;
-        }
-
-        private TimeSettings CheckAndGetDeviceTimeSettings(string deviceName)
-        {
-            var timeSettings = this.Client.DeviceSettings.GetTimeSettings(
-                                    deviceName,
-                                    this.ResourceGroupName,
-                                    this.ManagerName);
-
-            Assert.True(timeSettings != null, string.Format("Time Settings is not present on device"));
-            return timeSettings;
-        }
-
-        private NetworkSettings CheckAndGetDeviceNetworkSettings(string deviceName)
-        {
-            var networkSettings = this.Client.DeviceSettings.GetNetworkSettings(
-                                    deviceName,
-                                    this.ResourceGroupName,
-                                    this.ManagerName);
-
-            Assert.True(networkSettings != null, string.Format("Network Settings is not present on device"));
-            return networkSettings;
-        }
-
-        private SecuritySettings CheckAndGetDeviceSecuritySettings(string deviceName)
-        {
-            var securitySettings = this.Client.DeviceSettings.GetSecuritySettings(
-                                    deviceName,
-                                    this.ResourceGroupName,
-                                    this.ManagerName);
-
-            Assert.True(securitySettings != null, string.Format("Security Settings is not present on device"));
-            return securitySettings;
-        }
-
+        
         /// <summary>
         /// Create TimeSettings on the Device.
         /// </summary>
@@ -169,19 +124,17 @@ namespace StorSimple8000Series.Tests
             NetworkSettingsPatch networkSettingsPatch = new NetworkSettingsPatch();
             networkSettingsPatch.DnsSettings = dnsSettings;
             
-            return testBase.Client.DeviceSettings.UpdateNetworkSettings(
+            return this.Client.DeviceSettings.UpdateNetworkSettings(
                     deviceName.GetDoubleEncoded(),
                     networkSettingsPatch,
-                    testBase.ResourceGroupName,
-                    testBase.ManagerName);
+                    this.ResourceGroupName,
+                    this.ManagerName);
         }
 
         /// <summary>
         /// Create SecuritySettings on the Device.
         /// </summary>
-        public static SecuritySettings CreateAndValidateSecuritySettings(
-            StorSimple8000SeriesTestBase testBase,
-            string deviceName)
+        private SecuritySettings CreateAndValidateSecuritySettings(string deviceName)
         {
             RemoteManagementSettingsPatch remoteManagementSettings = new RemoteManagementSettingsPatch(RemoteManagementModeConfiguration.HttpsAndHttpEnabled);
             AsymmetricEncryptedSecret deviceAdminpassword = this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "test-secret");

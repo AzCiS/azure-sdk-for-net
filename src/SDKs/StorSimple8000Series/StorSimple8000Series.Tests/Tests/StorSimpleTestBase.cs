@@ -7,6 +7,9 @@ using Microsoft.Azure.Test.HttpRecorder;
 using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using Microsoft.Rest.Azure;
+using System.Linq.Expressions;
+using Microsoft.Rest.Azure.OData;
 
 namespace StorSimple8000Series.Tests
 {
@@ -57,6 +60,21 @@ namespace StorSimple8000Series.Tests
             return job;
         }
 
+        public IPage<Job> GetAllJobsByType(string deviceName, JobType jobType)
+        {
+            var selectedJobType = jobType.ToString();
+            Expression<Func<JobFilter, bool>> filterExp = filter =>
+                (filter.JobType == selectedJobType);
+            var jobsFilter = new ODataQuery<JobFilter>(filterExp);
+
+            var jobList = this.Client.Jobs.ListByDevice(
+                deviceName.GetDoubleEncoded(),
+                this.ResourceGroupName,
+                this.ManagerName,
+                jobsFilter);
+
+            return jobList;
+        }
         #endregion
 
         // Dispose all disposable objects
