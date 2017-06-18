@@ -1,41 +1,62 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for
-// license information.
-
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
+using System.Text;
+using System.Reflection;
+using System.Collections.Generic;
+using System.Threading;
 using System.Linq.Expressions;
 using Xunit;
+using Xunit.Sdk;
+using Xunit.Abstractions;
+using Microsoft.Rest.Azure;
+using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
 using Microsoft.Azure.Management.StorSimple8000Series;
 using Microsoft.Azure.Management.StorSimple8000Series.Models;
+using Microsoft.Azure.Test.HttpRecorder;
+using Microsoft.Azure.Management.Compute;
+using Microsoft.Azure.Management.Network;
 using Microsoft.Rest.Azure.OData;
-using SSModels = Microsoft.Azure.Management.StorSimple8000Series.Models;
 
 namespace StorSimple8000Series.Tests
 {
-    public static partial class Helpers
+    public class FailoverTests : StorSimpleTestBase
     {
+        public FailoverTests(ITestOutputHelper testOutputHelper) : base(testOutputHelper) { }
+
+        [Fact]
+        public void TestFailover()
+        {
+            //check and get pre-requisites - 2 devices, volumeContainer, volumes
+            var device1 = Helpers.CheckAndGetConfiguredDevices(this, TestConstants.DefaultDeviceName);
+            var device2 = Helpers.CheckAndGetConfiguredDevices(this, TestConstants.DeviceForFailover);
+            var sourceDeviceName = device1.Name;
+            var targetDeviceName = device2.Name;
+            var volumeContainers = Helpers.CheckAndGetVolumeContainers(this, sourceDeviceName, requiredCount: 2);
+            var volumeContainerNames = volumeContainers.Select(vc => vc.Name).ToList();
+
+            try
+            {
+                // Do failover
+                Failover(sourceDeviceName, targetDeviceName, volumeContainerNames);
+            }
+            catch (Exception e)
+            {
+                Assert.Null(e);
+            }
+        }
+
         /// <summary>
         /// Helper method to trigger failover
         /// </summary>
-        /// <param name="testBase"></param>
-        /// <param name="sourceDeviceName"></param>
-        /// <param name="targetDeviceName"></param>
-        /// <param name="volumeContainerNames"></param>
-        public static void Failover(
-                StorSimple8000SeriesTestBase testBase,
-                string sourceDeviceName,
-                string targetDeviceName,
-                IList<string> volumeContainerNames)
+        private void Failover(string sourceDeviceName, string targetDeviceName, IList<string> volumeContainerNames)
         {
             Assert.False(sourceDeviceName.Equals(
                 targetDeviceName,
                 StringComparison.CurrentCultureIgnoreCase));
 
-            var devices = testBase.Client.Devices.ListByManager(
-                                testBase.ResourceGroupName,
-                                testBase.ManagerName);
+            var devices = this.Client.Devices.ListByManager(
+                                this.ResourceGroupName,
+                                this.ManagerName);
 
             Assert.NotNull(devices);
             Assert.NotEmpty(devices);
@@ -54,10 +75,10 @@ namespace StorSimple8000Series.Tests
 
             Assert.NotNull(targetDevice);
 
-            var volumeContainers = testBase.Client.VolumeContainers.ListByDevice(
+            var volumeContainers = this.Client.VolumeContainers.ListByDevice(
                                 sourceDevice.Name.GetDoubleEncoded(),
-                                testBase.ResourceGroupName,
-                                testBase.ManagerName);
+                                this.ResourceGroupName,
+                                this.ManagerName);
 
             Assert.NotNull(volumeContainers);
             Assert.NotEmpty(volumeContainers);
@@ -72,10 +93,10 @@ namespace StorSimple8000Series.Tests
             }
 
             // Assert that volume containers are not already on target device
-            var volumeContainersOnTargetDevice = testBase.Client.VolumeContainers.ListByDevice(
+            var volumeContainersOnTargetDevice = this.Client.VolumeContainers.ListByDevice(
                                                 targetDevice.Name.GetDoubleEncoded(),
-                                                testBase.ResourceGroupName,
-                                                testBase.ManagerName);
+                                                this.ResourceGroupName,
+                                                this.ManagerName);
 
             Assert.NotNull(volumeContainersOnTargetDevice);
 
@@ -93,17 +114,17 @@ namespace StorSimple8000Series.Tests
             };
 
             // Trigger failover
-            testBase.Client.Devices.Failover(
+            this.Client.Devices.Failover(
                                 sourceDevice.Name.GetDoubleEncoded(),
                                 failoverRequest,
-                                testBase.ResourceGroupName,
-                                testBase.ManagerName);
+                                this.ResourceGroupName,
+                                this.ManagerName);
 
             // Query volume containers from target device after failover
-            var volumeContainersAfterFailover = testBase.Client.VolumeContainers.ListByDevice(
+            var volumeContainersAfterFailover = this.Client.VolumeContainers.ListByDevice(
                                  targetDevice.Name.GetDoubleEncoded(),
-                                 testBase.ResourceGroupName,
-                                 testBase.ManagerName);
+                                 this.ResourceGroupName,
+                                 this.ManagerName);
 
             Assert.NotNull(volumeContainersAfterFailover);
 

@@ -12,7 +12,7 @@ namespace StorSimple8000Series.Tests
 {
     public static partial class Helpers
     {
-        public static IEnumerable<StorageAccountCredential> CheckAndGetStorageAccountCredentials(StorSimple8000SeriesTestBase testBase, int requiredCount)
+        public static IEnumerable<StorageAccountCredential> CheckAndGetStorageAccountCredentials(StorSimpleTestBase testBase, int requiredCount)
         {
             var sacs = testBase.Client.StorageAccountCredentials.ListByManager(
                 testBase.ResourceGroupName,
@@ -23,7 +23,7 @@ namespace StorSimple8000Series.Tests
             return sacs;
         }
 
-        public static IEnumerable<AccessControlRecord> CheckAndGetAccessControlRecords(StorSimple8000SeriesTestBase testBase, int requiredCount)
+        public static IEnumerable<AccessControlRecord> CheckAndGetAccessControlRecords(StorSimpleTestBase testBase, int requiredCount)
         {
             var accessControlRecords = testBase.Client.AccessControlRecords.ListByManager(
                 testBase.ResourceGroupName,
@@ -34,7 +34,7 @@ namespace StorSimple8000Series.Tests
             return accessControlRecords;
         }
 
-        public static IEnumerable<BandwidthSetting> CheckAndGetBandwidthSettings(StorSimple8000SeriesTestBase testBase, int requiredCount)
+        public static IEnumerable<BandwidthSetting> CheckAndGetBandwidthSettings(StorSimpleTestBase testBase, int requiredCount)
         {
             var bandwidthSettings = testBase.Client.BandwidthSettings.ListByManager(
                 testBase.ResourceGroupName,
@@ -48,7 +48,7 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Checks if minimum number of configured devices required for the testcase exists. If yes, returns the devices.
         /// </summary>
-        public static IEnumerable<Device> CheckAndGetConfiguredDevices(StorSimple8000SeriesTestBase testBase, int requiredCount)
+        public static IEnumerable<Device> CheckAndGetConfiguredDevices(StorSimpleTestBase testBase, int requiredCount)
         {
             var devices = testBase.Client.Devices.ListByManager(testBase.ResourceGroupName, testBase.ManagerName);
 
@@ -69,7 +69,7 @@ namespace StorSimple8000Series.Tests
             return configuredDeviceNames;
         }
 
-        public static Device CheckAndGetConfiguredDevices(StorSimple8000SeriesTestBase testBase, string deviceName)
+        public static Device CheckAndGetConfiguredDevices(StorSimpleTestBase testBase, string deviceName)
         {
             var devices = testBase.Client.Devices.ListByManager(testBase.ResourceGroupName, testBase.ManagerName);
 
@@ -80,7 +80,7 @@ namespace StorSimple8000Series.Tests
             return device;
         }
 
-        public static IEnumerable<VolumeContainer> CheckAndGetVolumeContainers(StorSimple8000SeriesTestBase testBase, string deviceName, int requiredCount)
+        public static IEnumerable<VolumeContainer> CheckAndGetVolumeContainers(StorSimpleTestBase testBase, string deviceName, int requiredCount)
         {
             var volumeContainers = testBase.Client.VolumeContainers.ListByDevice(
                                     deviceName,
@@ -91,7 +91,7 @@ namespace StorSimple8000Series.Tests
             return volumeContainers;
         }
 
-        public static IEnumerable<Volume> CheckAndGetVolumes(StorSimple8000SeriesTestBase testBase, string deviceName, string volumeContainerName, int requiredCount)
+        public static IEnumerable<Volume> CheckAndGetVolumes(StorSimpleTestBase testBase, string deviceName, string volumeContainerName, int requiredCount)
         {
             var volumes = testBase.Client.Volumes.ListByVolumeContainer(
                                      deviceName,

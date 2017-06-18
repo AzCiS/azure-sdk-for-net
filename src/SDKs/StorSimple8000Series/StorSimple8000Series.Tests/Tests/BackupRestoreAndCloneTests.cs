@@ -1,29 +1,73 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for
-// license information.
-
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
+using System.Text;
+using System.Reflection;
+using System.Collections.Generic;
+using System.Threading;
 using System.Linq.Expressions;
 using Xunit;
+using Xunit.Sdk;
+using Xunit.Abstractions;
+using Microsoft.Rest.Azure;
+using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
 using Microsoft.Azure.Management.StorSimple8000Series;
 using Microsoft.Azure.Management.StorSimple8000Series.Models;
-using Microsoft.Rest.Azure.OData;
 using SSModels = Microsoft.Azure.Management.StorSimple8000Series.Models;
+using Microsoft.Azure.Test.HttpRecorder;
+using Microsoft.Azure.Management.Compute;
+using Microsoft.Azure.Management.Network;
+using Microsoft.Rest.Azure.OData;
 
 namespace StorSimple8000Series.Tests
 {
-    public static partial class Helpers
+    public class BackupRestoreAndCloneTests : StorSimpleTestBase
     {
+        public BackupRestoreAndCloneTests(ITestOutputHelper testOutputHelper) : base(testOutputHelper) { }
+
+        [Fact]
+        public void TestBackupRestoreAndClone()
+        {
+            //check and get pre-requisites - device, volumeContainer, volumes
+            var devices = Helpers.CheckAndGetConfiguredDevices(this, requiredCount: 1);
+            var deviceName = devices.First().Name;
+            var volumeContainerNames = Helpers.CheckAndGetVolumeContainers(this, deviceName, requiredCount: 1);
+            var volumeContainerName = volumeContainerNames.First().Name;
+            var volumes = Helpers.CheckAndGetVolumes(this, deviceName, volumeContainerName, requiredCount: 2);
+            var firstVolumeName = volumes.ElementAt(0).Name;
+            var volumeIds = new List<String>();
+            volumeIds.Add(volumes.ElementAt(0).Id);
+            volumeIds.Add(volumes.ElementAt(1).Id);
+
+            //initialize entity names
+            var backupPolicyName = "BkUpPolicyForSDKTest";
+
+            try
+            {
+                // Create a backup policy
+                var backupPolicy = CreateBackupPolicy(deviceName, backupPolicyName, volumeIds);
+
+                // Take manual backup
+                var backup = BackupNow(deviceName, backupPolicy.Name);
+
+                // Restore
+                RestoreBackup(deviceName, backup.Name);
+
+                // Clone
+                CloneVolume(deviceName, firstVolumeName);
+
+                //Delete backup-policies, and associated schedules and backups
+                DeleteBackupPolicieSchedulesAndBackups(deviceName, backupPolicyName);
+            }
+            catch (Exception e)
+            {
+                Assert.Null(e);
+            }
+        }
+
         /// <summary>
         /// Helper method to create backup policy for a given set of volumes.
         /// </summary>
-        public static BackupPolicy CreateBackupPolicy(
-            StorSimple8000SeriesTestBase testBase,
-            string deviceName,
-            string name,
-            IList<string> volumeIds)
+        private BackupPolicy CreateBackupPolicy(string deviceName, string name, IList<string> volumeIds)
         {
             var bp = new BackupPolicy()
             {
@@ -31,12 +75,12 @@ namespace StorSimple8000Series.Tests
                 VolumeIds = volumeIds
             };
 
-            var backupPolicy = testBase.Client.BackupPolicies.CreateOrUpdate(
+            var backupPolicy = this.Client.BackupPolicies.CreateOrUpdate(
                                     deviceName.GetDoubleEncoded(),
                                     name.GetDoubleEncoded(),
                                     bp,
-                                    testBase.ResourceGroupName,
-                                    testBase.ManagerName);
+                                    this.ResourceGroupName,
+                                    this.ManagerName);
 
             Assert.NotNull(backupPolicy);
             Assert.Equal(backupPolicy.SchedulesCount, 0);
@@ -53,8 +97,7 @@ namespace StorSimple8000Series.Tests
             foreach (string schName in scheduleNames)
             {
                 // Create a backup schedule
-                BackupSchedule bs = CreateBackupSchedule(
-                                        testBase,
+                BackupSchedule bs = CreateBackupSchedule(                                        
                                         deviceName,
                                         backupPolicy.Name,
                                         schName,
@@ -63,12 +106,12 @@ namespace StorSimple8000Series.Tests
             }
 
             //validate one of the schedules
-            var schedule = testBase.Client.BackupSchedules.Get(
+            var schedule = this.Client.BackupSchedules.Get(
                 deviceName.GetDoubleEncoded(),
                 backupPolicy.Name.GetDoubleEncoded(),
                 scheduleNames.First().GetDoubleEncoded(),
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
+                this.ResourceGroupName,
+                this.ManagerName);
 
             Assert.True(schedule != null && schedule.Name.Equals(scheduleNames.First()) &&
                 schedule.ScheduleRecurrence.Equals(RecurrenceType.Daily), "Schedule creation was not successful.");
@@ -79,30 +122,30 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Helper method to trigger a manual backup.
         /// </summary>
-        public static Backup BackupNow(StorSimple8000SeriesTestBase testBase, string deviceName, string policyName)
+        private Backup BackupNow(string deviceName, string policyName)
         {
             string backupType = BackupType.CloudSnapshot.ToString();
             var jobStartTime = DateTime.UtcNow;
 
-            var backupPolicy = testBase.Client.BackupPolicies.Get(
+            var backupPolicy = this.Client.BackupPolicies.Get(
                 deviceName,
                 policyName,
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
+                this.ResourceGroupName,
+                this.ManagerName);
 
             // Take the backup
-            testBase.Client.BackupPolicies.BackupNow(
+            this.Client.BackupPolicies.BackupNow(
                 deviceName.GetDoubleEncoded(),
                 policyName.GetDoubleEncoded(),
                 backupType,
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
+                this.ResourceGroupName,
+                this.ManagerName);
 
             // Get the backup job
-            var allBackupJobs = testBase.Client.Jobs.ListByDevice(
+            var allBackupJobs = this.Client.Jobs.ListByDevice(
                 deviceName,
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
+                this.ResourceGroupName,
+                this.ManagerName);
 
             var backupJob =
                 allBackupJobs.FirstOrDefault(
@@ -117,10 +160,10 @@ namespace StorSimple8000Series.Tests
                 backupFilter.CreatedTime >= jobStartTime &&
                 backupFilter.BackupPolicyId == backupPolicy.Id;
 
-            var backups = testBase.Client.Backups.ListByDevice(
+            var backups = this.Client.Backups.ListByDevice(
                                 deviceName,
-                                testBase.ResourceGroupName,
-                                testBase.ManagerName,
+                                this.ResourceGroupName,
+                                this.ManagerName,
                                 new ODataQuery<BackupFilter>(filter));
 
             Assert.Equal(1, backups.Count());
@@ -131,15 +174,15 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Helper method to restore volumes by backup.
         /// </summary>
-        public static void RestoreBackup(StorSimple8000SeriesTestBase testBase, string deviceName, string backupName)
+        private void RestoreBackup(string deviceName, string backupName)
         {
             DateTime jobStartTime = DateTime.UtcNow;
 
             // Get the backups by volume name
-            var backups = testBase.Client.Backups.ListByDevice(
+            var backups = this.Client.Backups.ListByDevice(
                                 deviceName.GetDoubleEncoded(),
-                                testBase.ResourceGroupName,
-                                testBase.ManagerName);
+                                this.ResourceGroupName,
+                                this.ManagerName);
 
             Assert.NotNull(backups);
             Assert.NotEmpty(backups);
@@ -149,15 +192,15 @@ namespace StorSimple8000Series.Tests
             Assert.NotNull(backup);
 
             // Get volumes in the device in one call
-            var volumeContainersByDevice = testBase.Client.VolumeContainers.ListByDevice(
+            var volumeContainersByDevice = this.Client.VolumeContainers.ListByDevice(
                 deviceName.GetDoubleEncoded(),
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
+                this.ResourceGroupName,
+                this.ManagerName);
 
-            var volumesByDevice = testBase.Client.Volumes.ListByDevice(
+            var volumesByDevice = this.Client.Volumes.ListByDevice(
                 deviceName.GetDoubleEncoded(),
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
+                this.ResourceGroupName,
+                this.ManagerName);
 
             // First delete the volumes associated with backup
             foreach (BackupElement be in backup.Elements)
@@ -174,40 +217,40 @@ namespace StorSimple8000Series.Tests
 
                 // Diable the volume before deleting
                 volumeToDelete.VolumeStatus = VolumeStatus.Offline;
-                testBase.Client.Volumes.CreateOrUpdate(
+                this.Client.Volumes.CreateOrUpdate(
                     deviceName.GetDoubleEncoded(),
                     volumeContainer.Name.GetDoubleEncoded(),
                     volumeToDelete.Name,
                     volumeToDelete,
-                    testBase.ResourceGroupName,
-                    testBase.ManagerName);
+                    this.ResourceGroupName,
+                    this.ManagerName);
 
-                testBase.Client.Volumes.Delete(
+                this.Client.Volumes.Delete(
                                         deviceName.GetDoubleEncoded(),
                                         volumeContainer.Name.GetDoubleEncoded(),
                                         be.VolumeName.GetDoubleEncoded(),
-                                        testBase.ResourceGroupName,
-                                        testBase.ManagerName);
+                                        this.ResourceGroupName,
+                                        this.ManagerName);
             }
 
-            testBase.Client.Backups.Restore(
+            this.Client.Backups.Restore(
                                 deviceName.GetDoubleEncoded(),
                                 backup.Name.GetDoubleEncoded(),
-                                testBase.ResourceGroupName,
-                                testBase.ManagerName);
+                                this.ResourceGroupName,
+                                this.ManagerName);
 
-            var volumes = testBase.Client.Volumes.ListByDevice(
+            var volumes = this.Client.Volumes.ListByDevice(
                                 deviceName.GetDoubleEncoded(),
-                                testBase.ResourceGroupName,
-                                testBase.ManagerName);
+                                this.ResourceGroupName,
+                                this.ManagerName);
 
             Assert.NotNull(volumes);
             Assert.NotEmpty(volumes);
 
-            var volumesAfterRestore = testBase.Client.Volumes.ListByDevice(
+            var volumesAfterRestore = this.Client.Volumes.ListByDevice(
                                                 deviceName.GetDoubleEncoded(),
-                                                testBase.ResourceGroupName,
-                                                testBase.ManagerName);
+                                                this.ResourceGroupName,
+                                                this.ManagerName);
 
             Assert.NotNull(volumesAfterRestore);
             Assert.NotEmpty(volumesAfterRestore);
@@ -224,18 +267,18 @@ namespace StorSimple8000Series.Tests
             }
         }
 
-        public static void CloneVolume(StorSimple8000SeriesTestBase testBase, string deviceName, string volumeName)
+        private void CloneVolume(string deviceName, string volumeName)
         {
-            string cloneVolumeName = TestUtilities.GenerateRandomName("CloneVolForSDKTest");
+            string cloneVolumeName = "CloneVolForSDKTest";
 
             // Get the device
-            var device = testBase.Client.Devices.Get(
+            var device = this.Client.Devices.Get(
                 deviceName.GetDoubleEncoded(),
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
+                this.ResourceGroupName,
+                this.ManagerName);
 
             // Get the backups for the volume
-            var backups = GetBackupsByVolume(testBase, deviceName, volumeName);
+            var backups = GetBackupsByVolume(deviceName, volumeName);
 
             Assert.NotNull(backups);
 
@@ -248,10 +291,10 @@ namespace StorSimple8000Series.Tests
             var backupElement = backup.Elements.FirstOrDefault();
             Assert.NotNull(backupElement);
 
-            var volumes = testBase.Client.Volumes.ListByDevice(
+            var volumes = this.Client.Volumes.ListByDevice(
                     deviceName.GetDoubleEncoded(),
-                    testBase.ResourceGroupName,
-                    testBase.ManagerName);
+                    this.ResourceGroupName,
+                    this.ManagerName);
 
             var volume = volumes.FirstOrDefault(
                 v => v.Name.Equals(volumeName, StringComparison.CurrentCultureIgnoreCase));
@@ -265,19 +308,19 @@ namespace StorSimple8000Series.Tests
                 TargetAccessControlRecordIds = volume.AccessControlRecordIds
             };
 
-            testBase.Client.Backups.Clone(
+            this.Client.Backups.Clone(
                 deviceName.GetDoubleEncoded(),
                 backup.Name,
                 backupElement.ElementName,
                 cloneRequest,
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
+                this.ResourceGroupName,
+                this.ManagerName);
 
             // Verify that the clone volume is created
-            var refreshedVolumes = testBase.Client.Volumes.ListByDevice(
+            var refreshedVolumes = this.Client.Volumes.ListByDevice(
                                                 deviceName,
-                                                testBase.ResourceGroupName,
-                                                testBase.ManagerName);
+                                                this.ResourceGroupName,
+                                                this.ManagerName);
 
             var clonedVolume = refreshedVolumes.FirstOrDefault(
                                 v => v.Name.Equals(
@@ -290,16 +333,16 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Deletes the backup-policy and all backups, backup-schedules for the specified backupPolicy
         /// </summary>
-        public static void DeleteBackupPolicieSchedulesAndBackups(StorSimple8000SeriesTestBase testBase, string deviceName, string backupPolicyName)
+        private void DeleteBackupPolicieSchedulesAndBackups(string deviceName, string backupPolicyName)
         {
             var doubleEncodedDeviceName = deviceName.GetDoubleEncoded();
 
             //get backupPolicy
-            var bp = testBase.Client.BackupPolicies.Get(
+            var bp = this.Client.BackupPolicies.Get(
                 doubleEncodedDeviceName,
                 backupPolicyName.GetDoubleEncoded(),
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
+                this.ResourceGroupName,
+                this.ManagerName);
 
             //create oDataQuery
             var startTime = DateTime.MinValue;
@@ -308,50 +351,50 @@ namespace StorSimple8000Series.Tests
             var oDataQuery = new ODataQuery<BackupFilter>(filter);
 
             //get backups for the backup-policy and delete
-            var backups = testBase.Client.Backups.ListByDevice(
+            var backups = this.Client.Backups.ListByDevice(
                 doubleEncodedDeviceName,
-                testBase.ResourceGroupName,
-                testBase.ManagerName,
+                this.ResourceGroupName,
+                this.ManagerName,
                 oDataQuery);
 
             foreach (var backup in backups)
             {
-                testBase.Client.Backups.Delete(
+                this.Client.Backups.Delete(
                     doubleEncodedDeviceName,
                     backup.Name.GetDoubleEncoded(),
-                    testBase.ResourceGroupName,
-                    testBase.ManagerName);
+                    this.ResourceGroupName,
+                    this.ManagerName);
             }
 
             //get schedules for the backup-policy and delete
-            var backupSchedules = testBase.Client.BackupSchedules.ListByBackupPolicy(
+            var backupSchedules = this.Client.BackupSchedules.ListByBackupPolicy(
                 doubleEncodedDeviceName,
                 bp.Name.GetDoubleEncoded(),
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
+                this.ResourceGroupName,
+                this.ManagerName);
 
             foreach (var schedule in backupSchedules)
             {
-                testBase.Client.BackupSchedules.Delete(
+                this.Client.BackupSchedules.Delete(
                     doubleEncodedDeviceName,
                     bp.Name.GetDoubleEncoded(),
                     schedule.Name.GetDoubleEncoded(),
-                    testBase.ResourceGroupName,
-                    testBase.ManagerName);
+                    this.ResourceGroupName,
+                    this.ManagerName);
             }
 
             //delete backup-policy
-            testBase.Client.BackupPolicies.Delete(
+            this.Client.BackupPolicies.Delete(
                 doubleEncodedDeviceName,
                 bp.Name.GetDoubleEncoded(),
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
+                this.ResourceGroupName,
+                this.ManagerName);
 
             //validate deletion
-            var backupPolicies = testBase.Client.BackupPolicies.ListByDevice(
+            var backupPolicies = this.Client.BackupPolicies.ListByDevice(
                 doubleEncodedDeviceName,
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
+                this.ResourceGroupName,
+                this.ManagerName);
 
             var backupPolicy = backupPolicies.FirstOrDefault(b => b.Name.Equals(backupPolicyName));
 
@@ -361,8 +404,7 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Create Schedule for a Backup 
         /// </summary>
-        private static BackupSchedule CreateBackupSchedule(
-            StorSimple8000SeriesTestBase testBase,
+        private BackupSchedule CreateBackupSchedule(
             string deviceName,
             string backupPolicyName,
             string name,
@@ -399,32 +441,32 @@ namespace StorSimple8000Series.Tests
                     weeklyDays.Select(d => (SSModels.DayOfWeek?)d).ToList();
             }
 
-            return testBase.Client.BackupSchedules.CreateOrUpdate(
+            return this.Client.BackupSchedules.CreateOrUpdate(
                     deviceName.GetDoubleEncoded(),
                     backupPolicyName.GetDoubleEncoded(),
                     name.GetDoubleEncoded(),
                     schedule,
-                    testBase.ResourceGroupName,
-                    testBase.ManagerName);
+                    this.ResourceGroupName,
+                    this.ManagerName);
         }
         /// <summary>
         /// Helper method to return backups for a given volume
         /// </summary>
-        private static IEnumerable<Backup> GetBackupsByVolume(StorSimple8000SeriesTestBase testBase, string deviceName, string volumeName)
+        private IEnumerable<Backup> GetBackupsByVolume(string deviceName, string volumeName)
         {
             // Get the device
-            var device = testBase.Client.Devices.Get(
+            var device = this.Client.Devices.Get(
                 deviceName.GetDoubleEncoded(),
-                testBase.ResourceGroupName,
-                testBase.ManagerName);
+                this.ResourceGroupName,
+                this.ManagerName);
 
             Assert.NotNull(device);
 
             // Get the volume
-            var volumes = testBase.Client.Volumes.ListByDevice(
+            var volumes = this.Client.Volumes.ListByDevice(
                                 deviceName.GetDoubleEncoded(),
-                                testBase.ResourceGroupName,
-                                testBase.ManagerName);
+                                this.ResourceGroupName,
+                                this.ManagerName);
 
             var volume = volumes.FirstOrDefault(
                 v => v.Name.Equals(volumeName, StringComparison.CurrentCultureIgnoreCase));
@@ -437,10 +479,10 @@ namespace StorSimple8000Series.Tests
             Expression<Func<BackupFilter, bool>> filter = backupFilter =>
                 backupFilter.VolumeId == vid;
 
-            return testBase.Client.Backups.ListByDevice(
+            return this.Client.Backups.ListByDevice(
                                 deviceName,
-                                testBase.ResourceGroupName,
-                                testBase.ManagerName,
+                                this.ResourceGroupName,
+                                this.ManagerName,
                                 new ODataQuery<BackupFilter>(filter)) as IEnumerable<Backup>;
         }
     }

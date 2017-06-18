@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.Rest.ClientRuntime.Azure.TestFramework;
 using Microsoft.Azure.Management.StorSimple8000Series;
 using Microsoft.Azure.Test.HttpRecorder;
@@ -19,13 +19,13 @@ using System.Threading;
 
 namespace StorSimple8000Series.Tests
 {
-    public class StorSimple8000SeriesScaTest : StorSimpleTestBase
+    public class CloudApplianceTests : StorSimpleTestBase
     {
         private const string DefaultModelNumber = "8020";
         protected ComputeManagementClient ComputeClient { get; set; }
         protected NetworkManagementClient NetworkClient { get; set; }
 
-        public StorSimple8000SeriesScaTest(ITestOutputHelper testOutputHelper) : base(testOutputHelper)
+        public CloudApplianceTests(ITestOutputHelper testOutputHelper) : base(testOutputHelper)
         {
             this.ComputeClient = this.Context.GetServiceClient<ComputeManagementClient>();
             this.NetworkClient = this.Context.GetServiceClient<NetworkManagementClient>();
@@ -64,7 +64,7 @@ namespace StorSimple8000Series.Tests
                 // Validate device status to be Ready to Setup
                 Assert.NotNull(device);
                 Assert.Equal(device.Status, DeviceStatus.ReadyToSetup);
-                
+
                 // Get job and validate if status is succeeded
                 var job = this.Client.Jobs.Get(uniqueName, jobName, this.ResourceGroupName, this.ManagerName);
                 Assert.Equal(job.JobType, JobType.CreateCloudAppliance);
@@ -103,11 +103,12 @@ namespace StorSimple8000Series.Tests
         public Device TrackScaJobByDeviceStatus(string deviceName)
         {
             Device device = null;
-            do{
+            do
+            {
                 Thread.Sleep(DefaultWaitingTimeInMs);
                 device = this.Client.Devices.Get(deviceName, this.ResourceGroupName, this.ManagerName);
             }
-            while(device != null && device.Status == DeviceStatus.Provisioning);
+            while (device != null && device.Status == DeviceStatus.Provisioning);
 
             return device;
         }
@@ -214,10 +215,10 @@ namespace StorSimple8000Series.Tests
             {
                 vnet = this.NetworkClient.VirtualNetworks.Get(this.ResourceGroupName, TestConstants.DefaultVirtualNetworkName);
             }
-            catch(CloudException ex)
+            catch (CloudException ex)
             {
                 // Error code is not ResourceNotFound, then unexpected failure and hence rethrowing exception
-                if(ex.Body.Code != "ResourceNotFound")
+                if (ex.Body.Code != "ResourceNotFound")
                 {
                     throw;
                 }

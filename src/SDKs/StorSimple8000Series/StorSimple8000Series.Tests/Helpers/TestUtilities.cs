@@ -20,10 +20,5 @@ namespace StorSimple8000Series.Tests
         {
             return Uri.EscapeDataString(Uri.EscapeDataString(input));
         }
-
-        public static string GenerateRandomName(string prefix)
-        {
-            return prefix + Guid.NewGuid().ToString().Substring(0, 4);
-        }
     }
 }

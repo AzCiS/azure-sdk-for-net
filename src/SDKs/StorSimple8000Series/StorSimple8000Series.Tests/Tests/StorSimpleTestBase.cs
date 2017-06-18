@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Reflection;
 using System.Threading;
 using Microsoft.Azure.Management.StorSimple8000Series;
@@ -16,13 +16,13 @@ namespace StorSimple8000Series.Tests
 
         protected const int DefaultWaitingTimeInMs = 60000;
 
-        protected string ResourceGroupName { get; set; }
+        public string ResourceGroupName { get; protected set; }
 
-        protected string ManagerName { get; set; }
+        public string ManagerName { get; protected set; }
 
         protected MockContext Context { get; set; }
 
-        protected StorSimple8000SeriesManagementClient Client { get; set; }
+        public StorSimple8000SeriesManagementClient Client { get; protected set; }
 
         public StorSimpleTestBase(ITestOutputHelper testOutputHelper)
         {
@@ -47,17 +47,18 @@ namespace StorSimple8000Series.Tests
         public Job TrackLongRunningJob(string deviceName, string jobName)
         {
             Job job = null;
-            do{
+            do
+            {
                 Thread.Sleep(DefaultWaitingTimeInMs);
                 job = this.Client.Jobs.Get(deviceName, jobName, this.ResourceGroupName, this.ManagerName);
             }
-            while(job != null && job.Status == JobStatus.Running);
+            while (job != null && job.Status == JobStatus.Running);
 
             return job;
         }
 
         #endregion
-        
+
         // Dispose all disposable objects
         public virtual void Dispose()
         {
