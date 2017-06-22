@@ -20,5 +20,8 @@ namespace StorSimple8000Series.Tests
         public const string SecondaryDnsServers = "10.67.64.15;10.67.64.14";
         public const string FirstDeviceControllerZeroIp = "10.168.241.122";
         public const string FirstDeviceControllerOneIp = "10.168.241.121";
+
+        public static readonly DateTime MetricsStartTime = new DateTime(2017, 06, 18);
+        public static readonly DateTime MetricsEndTime = new DateTime(2017, 06, 22);
     }
 }
