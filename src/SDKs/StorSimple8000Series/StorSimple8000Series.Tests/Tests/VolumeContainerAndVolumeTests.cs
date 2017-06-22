@@ -25,20 +25,20 @@ namespace StorSimple8000Series.Tests
         public void TestVolumeContainerAndVolume()
         {
             //check and get prerequisites - device, sac, acr, bws
-            var device = Helpers.CheckAndGetConfiguredDevices(this, TestConstants.DefaultDeviceName);
-            var sacs = Helpers.CheckAndGetStorageAccountCredentials(this, requiredCount: 1);
+            var device = Helpers.CheckAndGetConfiguredDevice(this, TestConstants.DefaultDeviceName);
+            var sac = Helpers.CheckAndGetStorageAccountCredential(this, TestConstants.DefaultStorageAccountCredential);
             var bandwidthSettings = Helpers.CheckAndGetBandwidthSettings(this, requiredCount: 1);
             var acrs = Helpers.CheckAndGetAccessControlRecords(this, requiredCount: 1);
             var deviceName = device.Name;
-            var sacName = sacs.First().Name;
+            var sacName = sac.Name;
             var bwsName = bandwidthSettings.First().Name;
             var acrName = acrs.First().Name;
 
             //initialize entity names
             var vcName = "VolumeContainerForSDKTest";
             var encryptionKeyForVC = "DummyEncryptionKeyForVC";
-            var volName1 = "VolumeForSDKTest1";
-            var volName2 = "VolumeForSDKTest2";
+            var volName1 = "Volume1ForSDKTest";
+            var volName2 = "Volume2ForSDKTest";
 
             try
             {
@@ -46,8 +46,8 @@ namespace StorSimple8000Series.Tests
                 var vc = CreateVolumeContainer(deviceName, vcName, encryptionKeyForVC, sacName, bwsName);
 
                 //Create volumes
-                var vol1 = CreateVolume(deviceName, vc.Name, volName1, VolumeType.Tiered, acrName);
-                var vol2= CreateVolume(deviceName, vc.Name, volName2, VolumeType.Tiered, acrName);
+                var vol1 = CreateVolume(deviceName, vc.Name, volName1, VolumeType.Tiered, VolumeStatus.Offline, acrName);
+                var vol2= CreateVolume(deviceName, vc.Name, volName2, VolumeType.Tiered, VolumeStatus.Offline, acrName);
 
                 //get all volumes in device
                 var volumesInDevice = ListAllVolumesInDevice(deviceName);
@@ -99,7 +99,7 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Creates Volume.
         /// </summary>
-        private Volume CreateVolume(string deviceName, string volumeContainerName, string volumeName, VolumeType volumeType, string acrName)
+        private Volume CreateVolume(string deviceName, string volumeContainerName, string volumeName, VolumeType volumeType, VolumeStatus volumeStatus, string acrName)
         {
             var acr = this.Client.AccessControlRecords.Get(acrName.GetDoubleEncoded(), this.ResourceGroupName, this.ManagerName);
             Assert.True(acr != null && acr.Name.Equals(acrName), "Access control record name passed for use in volume doesn't exists.");
@@ -110,7 +110,7 @@ namespace StorSimple8000Series.Tests
                 MonitoringStatus = MonitoringStatus.Enabled,
                 SizeInBytes = (long)5 * 1024 * 1024 * 1024, //5 Gb
                 VolumeType = volumeType,
-                VolumeStatus = VolumeStatus.Online
+                VolumeStatus = volumeStatus
             };
 
             var volume = this.Client.Volumes.CreateOrUpdate(deviceName.GetDoubleEncoded(),
@@ -123,7 +123,7 @@ namespace StorSimple8000Series.Tests
             Assert.True(volume != null && volume.Name.Equals(volumeName) &&
                 volume.MonitoringStatus.Equals(MonitoringStatus.Enabled) &&
                 volume.VolumeType.Equals(volumeType) &&
-                volume.VolumeStatus.Equals(VolumeStatus.Online),
+                volume.VolumeStatus.Equals(volumeStatus),
                 "Creation of Volume was not successful");
 
             return volume;

@@ -18,9 +18,21 @@ namespace StorSimple8000Series.Tests
                 testBase.ResourceGroupName,
                 testBase.ManagerName);
 
-            Assert.True(sacs.Count() >= requiredCount, string.Format("Could not found minimum Storage Account Credentials: Required={0}, ActuallyFound={1}", requiredCount, sacs.Count()));
+            Assert.True(sacs.Count() >= requiredCount, string.Format("Could not find minimum Storage Account Credentials: Required={0}, ActuallyFound={1}", requiredCount, sacs.Count()));
 
             return sacs;
+        }
+
+        public static StorageAccountCredential CheckAndGetStorageAccountCredential(StorSimpleTestBase testBase, string sacName)
+        {
+            var sac = testBase.Client.StorageAccountCredentials.Get(
+                sacName.GetDoubleEncoded(),
+                testBase.ResourceGroupName,
+                testBase.ManagerName);
+
+            Assert.True(sac != null && sac.Name.Equals(sacName), string.Format("Could not find specific Storage Account Credentials(Name={0})", sacName));
+
+            return sac;
         }
 
         public static IEnumerable<AccessControlRecord> CheckAndGetAccessControlRecords(StorSimpleTestBase testBase, int requiredCount)
@@ -29,7 +41,7 @@ namespace StorSimple8000Series.Tests
                 testBase.ResourceGroupName,
                 testBase.ManagerName);
 
-            Assert.True(accessControlRecords.Count() >= requiredCount, string.Format("Could not found minimum access control records: Required={0}, ActuallyFound={1}", requiredCount, accessControlRecords.Count()));
+            Assert.True(accessControlRecords.Count() >= requiredCount, string.Format("Could not find minimum access control records: Required={0}, ActuallyFound={1}", requiredCount, accessControlRecords.Count()));
 
             return accessControlRecords;
         }
@@ -40,7 +52,7 @@ namespace StorSimple8000Series.Tests
                 testBase.ResourceGroupName,
                 testBase.ManagerName);
 
-            Assert.True(bandwidthSettings.Count() >= requiredCount, string.Format("Could not found minimum Bandwidth settings: Required={0}, ActuallyFound={1}", requiredCount, bandwidthSettings.Count()));
+            Assert.True(bandwidthSettings.Count() >= requiredCount, string.Format("Could not find minimum Bandwidth settings: Required={0}, ActuallyFound={1}", requiredCount, bandwidthSettings.Count()));
 
             return bandwidthSettings;
         }
@@ -64,18 +76,18 @@ namespace StorSimple8000Series.Tests
                 }
             }
 
-            Assert.True(configuredDeviceCount >= requiredCount, string.Format("Could not found minimum configured devices: Required={0}, ActuallyFound={1}", requiredCount, configuredDeviceCount));
+            Assert.True(configuredDeviceCount >= requiredCount, string.Format("Could not find minimum configured devices: Required={0}, ActuallyFound={1}", requiredCount, configuredDeviceCount));
 
             return configuredDeviceNames;
         }
 
-        public static Device CheckAndGetConfiguredDevices(StorSimpleTestBase testBase, string deviceName)
+        public static Device CheckAndGetConfiguredDevice(StorSimpleTestBase testBase, string deviceName)
         {
             var devices = testBase.Client.Devices.ListByManager(testBase.ResourceGroupName, testBase.ManagerName);
 
             var device = devices.FirstOrDefault(d => d.Status.Equals(DeviceStatus.Online) && d.Name.Equals(deviceName));
 
-            Assert.True(device != null, string.Format("Could not configured device with the specified device-name: {0}", deviceName));
+            Assert.True(device != null, string.Format("Could not find configured device with the specified device-name: {0}", deviceName));
 
             return device;
         }
@@ -86,7 +98,7 @@ namespace StorSimple8000Series.Tests
                                     deviceName,
                                     testBase.ResourceGroupName,
                                     testBase.ManagerName);
-            Assert.True(volumeContainers.Count() >= requiredCount, string.Format("Minimum configured volumeContainers: Required={0}, ActuallyFound={1}", requiredCount, volumeContainers.Count()));
+            Assert.True(volumeContainers.Count() >= requiredCount, string.Format("Could not find minimum volumeContainers: Required={0}, ActuallyFound={1}", requiredCount, volumeContainers.Count()));
 
             return volumeContainers;
         }
@@ -98,7 +110,7 @@ namespace StorSimple8000Series.Tests
                                      volumeContainerName,
                                      testBase.ResourceGroupName,
                                      testBase.ManagerName);
-            Assert.True(volumes.Count() >= requiredCount, string.Format("Minimum configured volumes: Required={0}, ActuallyFound={1}", requiredCount, volumes.Count()));
+            Assert.True(volumes.Count() >= requiredCount, string.Format("Could not find minimum volumes: Required={0}, ActuallyFound={1}", requiredCount, volumes.Count()));
 
             return volumes;
         }

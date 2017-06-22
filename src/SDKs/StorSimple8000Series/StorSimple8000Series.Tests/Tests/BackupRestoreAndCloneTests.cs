@@ -28,18 +28,20 @@ namespace StorSimple8000Series.Tests
         public void TestBackupRestoreAndClone()
         {
             //check and get pre-requisites - device, volumeContainer, volumes
-            var devices = Helpers.CheckAndGetConfiguredDevices(this, requiredCount: 1);
-            var deviceName = devices.First().Name;
+            var device = Helpers.CheckAndGetConfiguredDevice(this, TestConstants.DefaultDeviceName);
+            var deviceName = device.Name;
             var volumeContainerNames = Helpers.CheckAndGetVolumeContainers(this, deviceName, requiredCount: 1);
             var volumeContainerName = volumeContainerNames.First().Name;
             var volumes = Helpers.CheckAndGetVolumes(this, deviceName, volumeContainerName, requiredCount: 2);
-            var firstVolumeName = volumes.ElementAt(0).Name;
             var volumeIds = new List<String>();
             volumeIds.Add(volumes.ElementAt(0).Id);
             volumeIds.Add(volumes.ElementAt(1).Id);
+            var firstVolumeName = volumes.ElementAt(0).Name;
+            var firstVolumeId = volumeIds.First();
+            var firstVolumeAcrIds = volumes.ElementAt(0).AccessControlRecordIds;
 
             //initialize entity names
-            var backupPolicyName = "BkUpPolicyForSDKTest";
+            var backupPolicyName = "BkUpPolicy01ForSDKTest";
 
             try
             {
@@ -53,7 +55,7 @@ namespace StorSimple8000Series.Tests
                 RestoreBackup(deviceName, backup.Name);
 
                 // Clone
-                CloneVolume(deviceName, firstVolumeName);
+                CloneVolume(deviceName, firstVolumeName, firstVolumeId, firstVolumeAcrIds);
 
                 //Delete backup-policies, and associated schedules and backups
                 DeleteBackupPolicieSchedulesAndBackups(deviceName, backupPolicyName);
@@ -94,15 +96,19 @@ namespace StorSimple8000Series.Tests
             Dictionary<string, BackupSchedule> schNameToObject =
                 new Dictionary<string, BackupSchedule>();
 
+            int hour = 10; //10am
             foreach (string schName in scheduleNames)
             {
+                
                 // Create a backup schedule
                 BackupSchedule bs = CreateBackupSchedule(                                        
                                         deviceName,
                                         backupPolicy.Name,
                                         schName,
-                                        RecurrenceType.Daily);
+                                        RecurrenceType.Daily,
+                                        new DateTime(2017, 06, 21, hour, 00, 00));
                 schNameToObject.Add(schName, bs);
+                hour++;
             }
 
             //validate one of the schedules
@@ -114,7 +120,7 @@ namespace StorSimple8000Series.Tests
                 this.ManagerName);
 
             Assert.True(schedule != null && schedule.Name.Equals(scheduleNames.First()) &&
-                schedule.ScheduleRecurrence.Equals(RecurrenceType.Daily), "Schedule creation was not successful.");
+                schedule.ScheduleRecurrence.RecurrenceType.Equals(RecurrenceType.Daily), "Schedule creation was not successful.");
 
             return backupPolicy;
         }
@@ -132,7 +138,7 @@ namespace StorSimple8000Series.Tests
                 this.ManagerName);
 
             // Take the backup
-            var jobStartTime = DateTime.UtcNow;
+            var jobStartTime = new DateTime(2017, 06, 21);
             this.Client.BackupPolicies.BackupNow(
                 deviceName.GetDoubleEncoded(),
                 policyName.GetDoubleEncoded(),
@@ -180,7 +186,7 @@ namespace StorSimple8000Series.Tests
             Assert.NotNull(backup);
 
             //restore the backup
-            DateTime jobStartTime = DateTime.UtcNow;
+            var jobStartTime = new DateTime(2017, 06, 21);//21st June, 2017
             this.Client.Backups.Restore(
                                 deviceName.GetDoubleEncoded(),
                                 backup.Name.GetDoubleEncoded(),
@@ -199,7 +205,7 @@ namespace StorSimple8000Series.Tests
             Assert.True(restoreJob != null && restoreJob.Status.Equals(JobStatus.Succeeded), "Restore was not successful.");
         }
 
-        private void CloneVolume(string deviceName, string volumeName)
+        private void CloneVolume(string deviceName, string volumeName, string volumeId, IList<string> accessControlRecordIds)
         {
             string cloneVolumeName = "Cloned" + volumeName;
 
@@ -208,14 +214,15 @@ namespace StorSimple8000Series.Tests
             Assert.NotNull(device);
 
             // Get the latest backups for the volume
-            var backups = GetBackupsByVolume(deviceName, volumeName);
+            var volume = this.Client.Volumes.ListByDevice(deviceName.GetDoubleEncoded(), this.ResourceGroupName, this.ManagerName);
+            var backups = GetBackupsByVolume(deviceName, volumeId);
             Assert.NotNull(backups);
             var backup = backups.First();
             Assert.NotNull(backup);
             Assert.NotNull(backup.Elements);
 
             //get the backup-element corresponding to the volume
-            var backupElement = backup.Elements.FirstOrDefault(e => e.VolumeName.Equals(volumeName));
+            var backupElement = backup.Elements.FirstOrDefault(e => e.VolumeName.Equals(volumeName, StringComparison.CurrentCultureIgnoreCase));
             Assert.NotNull(backupElement);
 
             // Prepare clone request and trigger clone
@@ -224,8 +231,9 @@ namespace StorSimple8000Series.Tests
                 BackupElement = backupElement,
                 TargetDeviceId = device.Id,
                 TargetVolumeName = cloneVolumeName,
+                TargetAccessControlRecordIds = accessControlRecordIds
             };
-
+            
             this.Client.Backups.Clone(
                 deviceName.GetDoubleEncoded(),
                 backup.Name,
@@ -264,7 +272,7 @@ namespace StorSimple8000Series.Tests
 
             //create oDataQuery
             var startTime = DateTime.MinValue;
-            var endTime = DateTime.Now;
+            var endTime = new DateTime(2017, 06, 23);
             Expression<Func<BackupFilter, bool>> filter = f => f.CreatedTime >= startTime && f.CreatedTime <= endTime && f.BackupPolicyId == bp.Id;
             var oDataQuery = new ODataQuery<BackupFilter>(filter);
 
@@ -326,10 +334,10 @@ namespace StorSimple8000Series.Tests
             string deviceName,
             string backupPolicyName,
             string name,
-            RecurrenceType recurrenceType)
+            RecurrenceType recurrenceType,
+            DateTime startTime)
         {
             // Initialize defaults
-            DateTime startTime = DateTime.UtcNow;
             ScheduleStatus scheduleStatus = ScheduleStatus.Enabled;
             int recurrenceValue = 1;
             long retentionCount = 1;
@@ -371,24 +379,11 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Helper method to return backups for a given volume
         /// </summary>
-        private IEnumerable<Backup> GetBackupsByVolume(string deviceName, string volumeName)
+        private IEnumerable<Backup> GetBackupsByVolume(string deviceName, string volumeId)
         {
-            // Get the volume
-            var volumes = this.Client.Volumes.ListByDevice(
-                                deviceName.GetDoubleEncoded(),
-                                this.ResourceGroupName,
-                                this.ManagerName);
-
-            var volume = volumes.FirstOrDefault(
-                v => v.Name.Equals(volumeName, StringComparison.CurrentCultureIgnoreCase));
-
-            Assert.NotNull(volume);
-
-            string vid = volume.Id;
-
             // Get the backups by the VolumeId
             Expression<Func<BackupFilter, bool>> filter = backupFilter =>
-                backupFilter.VolumeId == vid;
+                backupFilter.VolumeId == volumeId;
 
             return this.Client.Backups.ListByDevice(
                                 deviceName,

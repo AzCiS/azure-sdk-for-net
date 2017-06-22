@@ -27,7 +27,7 @@ namespace StorSimple8000Series.Tests
         public void TestMetricOperations()
         {
             //checking for prerequisites
-            var device = Helpers.CheckAndGetConfiguredDevices(this, TestConstants.DeviceForMonitoringTest);
+            var device = Helpers.CheckAndGetConfiguredDevice(this, TestConstants.DeviceForMonitoringTest);
             var deviceName = device.Name;
             var volumeContainers = Helpers.CheckAndGetVolumeContainers(this, deviceName, requiredCount: 1);
             var volumeContainerName = volumeContainers.First().Name;

@@ -54,7 +54,7 @@ namespace StorSimple8000Series.Tests
         {
             {
                 //checking for prerequisites
-                var device = Helpers.CheckAndGetConfiguredDevices(this, TestConstants.DeviceForKeyRollover);
+                var device = Helpers.CheckAndGetConfiguredDevice(this, TestConstants.DeviceForKeyRollover);
                 var firstDeviceName = device.Name;
 
                 try

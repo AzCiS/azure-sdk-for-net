@@ -24,10 +24,10 @@ namespace StorSimple8000Series.Tests
         public DeviceSettingsTests(ITestOutputHelper testOutputHelper) : base(testOutputHelper) { }
 
         [Fact]
-        public void TestDeviceSettingsOperationsOnConfiguredDevices()
+        public void TestDeviceSettingsOperationsOnConfiguredDevice()
         {
-            var devices = Helpers.CheckAndGetConfiguredDevices(this, requiredCount: 1);
-            var deviceName = devices.First().Name;
+            var device = Helpers.CheckAndGetConfiguredDevice(this, TestConstants.DefaultDeviceName);
+            var deviceName = device.Name;
 
             try
             {
@@ -38,7 +38,7 @@ namespace StorSimple8000Series.Tests
                 var alertSettings = CreateAndValidateAlertSettings(deviceName);
 
                 //Create Network Settings
-                var bws = CreateAndValidateNetworkSettings(deviceName);
+                var networkSettings = CreateAndValidateNetworkSettings(deviceName);
 
                 //Create Security Settings
                 var securitySettings = CreateAndValidateSecuritySettings(deviceName);
@@ -71,7 +71,7 @@ namespace StorSimple8000Series.Tests
 
             //validation
             Assert.True(timeSettings != null && timeSettings.PrimaryTimeServer.Equals("time.windows.com") &&
-                timeSettings.SecondaryTimeServer.Equals("8.8.8.8"), "Creation of Time Setting was not successful.");
+                timeSettings.SecondaryTimeServer[0].Equals("8.8.8.8"), "Creation of Time Setting was not successful.");
 
             return timeSettings;
         }
@@ -136,16 +136,28 @@ namespace StorSimple8000Series.Tests
         /// </summary>
         private SecuritySettings CreateAndValidateSecuritySettings(string deviceName)
         {
-            RemoteManagementSettingsPatch remoteManagementSettings = new RemoteManagementSettingsPatch(RemoteManagementModeConfiguration.HttpsAndHttpEnabled);
-            AsymmetricEncryptedSecret deviceAdminpassword = this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "test-secret");
-            AsymmetricEncryptedSecret snapshotmanagerPassword = this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "test-secret1");
+            RemoteManagementSettingsPatch remoteManagementSettings = new RemoteManagementSettingsPatch(
+                RemoteManagementModeConfiguration.HttpsAndHttpEnabled);
+            AsymmetricEncryptedSecret deviceAdminpassword = this.Client.Managers.GetAsymmetricEncryptedSecret(
+                this.ResourceGroupName,
+                this.ManagerName,
+                "test-adminp13");
+            AsymmetricEncryptedSecret snapshotmanagerPassword = this.Client.Managers.GetAsymmetricEncryptedSecret(
+                this.ResourceGroupName,
+                this.ManagerName,
+                "test-ssmpas1235");
 
-            ChapSettings chapSettings = new ChapSettings("test-initiator-user",
-                this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "test-chapsecret1"),
-            "test-target-user",
-                this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "test-chapsecret2"));
+            ChapSettings chapSettings = new ChapSettings(
+                "test-initiator-user",
+                this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "chapsetInitP124"),
+                "test-target-user",
+                this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "chapsetTargP1235"));
 
-            SecuritySettingsPatch securitySettingsPatch = new SecuritySettingsPatch(remoteManagementSettings, deviceAdminpassword, snapshotmanagerPassword, chapSettings);
+            SecuritySettingsPatch securitySettingsPatch = new SecuritySettingsPatch(
+                remoteManagementSettings,
+                deviceAdminpassword,
+                snapshotmanagerPassword,
+                chapSettings);
 
             this.Client.DeviceSettings.UpdateSecuritySettings(
                     deviceName.GetDoubleEncoded(),
@@ -159,7 +171,8 @@ namespace StorSimple8000Series.Tests
                 this.ManagerName);
 
             //validation
-            Assert.True(securitySettings != null && securitySettings.RemoteManagementSettings.Equals(RemoteManagementModeConfiguration.HttpsAndHttpEnabled) &&
+            Assert.True(securitySettings != null &&
+                securitySettings.RemoteManagementSettings.RemoteManagementMode.Equals(RemoteManagementModeConfiguration.HttpsAndHttpEnabled) &&
                 securitySettings.ChapSettings.InitiatorUser.Equals("test-initiator-user") &&
                 securitySettings.ChapSettings.TargetUser.Equals("test-target-user"), "Creation of Security Setting was not successful.");
 

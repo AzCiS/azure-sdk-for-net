@@ -27,8 +27,8 @@ namespace StorSimple8000Series.Tests
         public void TestFailover()
         {
             //check and get pre-requisites - 2 devices, volumeContainer, volumes
-            var device1 = Helpers.CheckAndGetConfiguredDevices(this, TestConstants.DefaultDeviceName);
-            var device2 = Helpers.CheckAndGetConfiguredDevices(this, TestConstants.DeviceForFailover);
+            var device1 = Helpers.CheckAndGetConfiguredDevice(this, TestConstants.DefaultDeviceName);
+            var device2 = Helpers.CheckAndGetConfiguredDevice(this, TestConstants.DeviceForFailover);
             var sourceDeviceName = device1.Name;
             var targetDeviceName = device2.Name;
             var volumeContainers = Helpers.CheckAndGetVolumeContainers(this, sourceDeviceName, requiredCount: 2);
