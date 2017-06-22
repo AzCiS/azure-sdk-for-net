@@ -98,6 +98,106 @@ namespace StorSimple8000Series.Tests
             }
         }
 
+        [Fact]
+        public void TestConfigureCloudAppliance()
+        {
+            //checking for prerequisites
+            var device = Helpers.CheckAndGetConfiguredDevice(this, DeviceType.Series8000VirtualAppliance, DeviceStatus.ReadyToSetup);
+            var deviceName = device.Name;
+
+            //the service data encryption key from rollovered device
+            var serviceDataEncryptionKey = "ZJOCJNA3k0g5WSHqskiMug==";
+
+            try
+            {
+                // Device admin password and snapshot manager password
+                AsymmetricEncryptedSecret deviceAdminpassword = this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "test-secret");
+                AsymmetricEncryptedSecret snapshotmanagerPassword = this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "test-secret1");
+
+                //cloud appliance settings
+                CloudApplianceSettings cloudApplianceSettings = new CloudApplianceSettings();
+                cloudApplianceSettings.ServiceDataEncryptionKey = EncryptSecretUsingDEK(this.ResourceGroupName, this.ManagerName, deviceName, serviceDataEncryptionKey);
+                var managerExtendedInfo = this.Client.Managers.GetExtendedInfo(this.ResourceGroupName, this.ManagerName);
+                cloudApplianceSettings.ChannelIntegrityKey = EncryptSecretUsingDEK(this.ResourceGroupName, this.ManagerName, deviceName, managerExtendedInfo.IntegrityKey);
+
+                //security settings patch
+                SecuritySettingsPatch securitySettingsPatch = new SecuritySettingsPatch()
+                {
+                    DeviceAdminPassword = deviceAdminpassword,
+                    SnapshotPassword = snapshotmanagerPassword,
+                    CloudApplianceSettings = cloudApplianceSettings
+                };
+
+                //update security settings
+                this.Client.DeviceSettings.UpdateSecuritySettings(
+                        deviceName.GetDoubleEncoded(),
+                        securitySettingsPatch,
+                        this.ResourceGroupName,
+                        this.ManagerName);
+
+                var securitySettings = this.Client.DeviceSettings.GetSecuritySettings(
+                    deviceName.GetDoubleEncoded(),
+                    this.ResourceGroupName,
+                    this.ManagerName);
+
+                //validation
+                Assert.True(securitySettings != null, "Creation of Security Setting was not successful.");
+
+                //validate that SCA got configured, by checking device is online now.
+                Helpers.CheckAndGetConfiguredDevices(this, deviceName);
+            }
+            catch (Exception e)
+            {
+                Assert.Null(e);
+            }
+        }
+
+
+        [Fact]
+        public void TestUpdateServiceDataEncryptionKeyOnCloudAppliance()
+        {
+            //checking for prerequisites
+            var device = Helpers.CheckAndGetConfiguredDevice(this, DeviceType.Series8000VirtualAppliance);
+            var deviceName = device.Name;
+
+            //the new service data encryption key from rollovered device
+            var newServiceDataEncryptionKey = "ZJOCJNA3k0g5WSHqskiMug==";
+
+            try
+            {
+                //cloud appliance settings
+                CloudApplianceSettings cloudApplianceSettings = new CloudApplianceSettings();
+                cloudApplianceSettings.ServiceDataEncryptionKey = EncryptSecretUsingDEK(this.ResourceGroupName, this.ManagerName, deviceName, newServiceDataEncryptionKey);
+                var managerExtendedInfo = this.Client.Managers.GetExtendedInfo(this.ResourceGroupName, this.ManagerName);
+                cloudApplianceSettings.ChannelIntegrityKey = EncryptSecretUsingDEK(this.ResourceGroupName, this.ManagerName, deviceName, managerExtendedInfo.IntegrityKey);
+
+                //security settings patch
+                SecuritySettingsPatch securitySettingsPatch = new SecuritySettingsPatch()
+                {
+                    CloudApplianceSettings = cloudApplianceSettings
+                };
+
+                //update security settings
+                this.Client.DeviceSettings.UpdateSecuritySettings(
+                        deviceName.GetDoubleEncoded(),
+                        securitySettingsPatch,
+                        this.ResourceGroupName,
+                        this.ManagerName);
+
+                var securitySettings = this.Client.DeviceSettings.GetSecuritySettings(
+                    deviceName.GetDoubleEncoded(),
+                    this.ResourceGroupName,
+                    this.ManagerName);
+
+                //validation
+                Assert.True(securitySettings != null, "Creation of Security Setting was not successful.");
+            }
+            catch (Exception e)
+            {
+                Assert.Null(e);
+            }
+        }
+
         #region Helper methods
 
         public Device TrackScaJobByDeviceStatus(string deviceName)
@@ -282,6 +382,14 @@ namespace StorSimple8000Series.Tests
             return disks;
         }
 
+        private AsymmetricEncryptedSecret EncryptSecretUsingDEK(string resourceGroupName, string managerName, string deviceName, string plainTextSecret)
+        {
+            PublicKey devicePublicEncryptionInfo = this.Client.Managers.GetDevicePublicEncryptionKey(deviceName.GetDoubleEncoded(), resourceGroupName, managerName);
+            var encryptedSecret = CryptoHelper.EncryptSecretRSAPKCS(plainTextSecret, devicePublicEncryptionInfo.Key);
+            AsymmetricEncryptedSecret secret = new AsymmetricEncryptedSecret(encryptedSecret, EncryptionAlgorithm.RSAESPKCS1V15, String.Empty);
+
+            return secret;
+        }
         #endregion
 
         // Dispose all disposable objects
