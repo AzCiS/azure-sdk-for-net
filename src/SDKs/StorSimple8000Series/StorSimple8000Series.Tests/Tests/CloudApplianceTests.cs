@@ -144,7 +144,7 @@ namespace StorSimple8000Series.Tests
                 Assert.True(securitySettings != null, "Creation of Security Setting was not successful.");
 
                 //validate that SCA got configured, by checking device is online now.
-                Helpers.CheckAndGetConfiguredDevices(this, deviceName);
+                Helpers.CheckAndGetConfiguredDevice(this, deviceName);
             }
             catch (Exception e)
             {
