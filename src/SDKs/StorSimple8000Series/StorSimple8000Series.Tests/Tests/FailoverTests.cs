@@ -31,7 +31,7 @@ namespace StorSimple8000Series.Tests
             var device2 = Helpers.CheckAndGetConfiguredDevice(this, TestConstants.DeviceForFailover);
             var sourceDeviceName = device1.Name;
             var targetDeviceName = device2.Name;
-            var volumeContainers = Helpers.CheckAndGetVolumeContainers(this, sourceDeviceName, requiredCount: 2);
+            var volumeContainers = Helpers.CheckAndGetVolumeContainers(this, sourceDeviceName, requiredCount: 1);
             var volumeContainerNames = volumeContainers.Select(vc => vc.Name).ToList();
 
             try
@@ -105,6 +105,30 @@ namespace StorSimple8000Series.Tests
 
             Assert.NotNull(volumeContainersAlreadyOnTargetDevice);
             Assert.Empty(volumeContainersAlreadyOnTargetDevice);
+
+            // Get failover sets
+            var failoverSets = this.Client.Devices.ListFailoverSets(
+                sourceDeviceName,
+                this.ResourceGroupName,
+                this.ManagerName);
+
+            Assert.NotNull(failoverSets);
+            Assert.NotEmpty(failoverSets);
+
+            // Get failover targets
+            ListFailoverTargetsRequest failoverTargetsRequest = new ListFailoverTargetsRequest()
+            {
+                VolumeContainers = volumeContainerIds
+            };
+
+            var failoverTargets = this.Client.Devices.ListFailoverTargets(
+                sourceDeviceName,
+                failoverTargetsRequest,
+                this.ResourceGroupName,
+                this.ManagerName);
+
+            Assert.NotNull(failoverTargets);
+            Assert.NotEmpty(failoverTargets);
 
             // Create a failover request
             FailoverRequest failoverRequest = new FailoverRequest()
