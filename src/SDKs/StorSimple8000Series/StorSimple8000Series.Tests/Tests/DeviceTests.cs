@@ -26,27 +26,37 @@ namespace StorSimple8000Series.Tests
         [Fact]
         public void TestDeviceOperations()
         {
-            //List devices
-            var devices = GetDevices();
-            var deviceName = devices.Where(d => d.Status == DeviceStatus.ReadyToSetup).First().Name;
+            var deviceToUse = TestConstants.DeviceForDeviceOperationTests;
 
-            //Get device
-            var device = GetByName(deviceName);
+            try
+            {
+                //List devices
+                var devices = ListDevices();
 
-            //Configure device
-            ConfigureDevice(deviceName);
+                //get the specific device
+                var device = devices.FirstOrDefault(d => d.Status == DeviceStatus.ReadyToSetup && d.Name.Equals(deviceToUse));
+                Assert.NotNull(device);
+                var deviceName = device.Name;
 
-            //Update device
-            UpdateDevice(deviceName, "updated device description");
+                //Configure device
+                ConfigureDevice(deviceName);
 
-            //Get device
-            device = GetByName(deviceName);
+                //Update device
+                UpdateDevice(deviceName, "updated device description");
 
-            //Deactivate device
-            Deactivate(deviceName);
+                //Get device
+                device = GetByName(deviceName);
 
-            //Delete device
-            Delete(deviceName);
+                //Deactivate device
+                Deactivate(deviceName);
+
+                //Delete device
+                Delete(deviceName);
+            }
+            catch (Exception e)
+            {
+                Assert.Null(e);
+            }
         }
 
         [Fact]
@@ -54,13 +64,13 @@ namespace StorSimple8000Series.Tests
         {
             {
                 //checking for prerequisites
-                var device = Helpers.CheckAndGetConfiguredDevice(this, TestConstants.DeviceForKeyRollover);
-                var firstDeviceName = device.Name;
+                var device = Helpers.CheckAndGetConfiguredDevice(this, TestConstants.DefaultDeviceName);
+                var deviceName = device.Name;
 
                 try
                 {
                     //Authorize device for Key rollover.
-                    AuthorizeDeviceForRollover(firstDeviceName);
+                    AuthorizeDeviceForRollover(deviceName);
                 }
                 catch (Exception e)
                 {
@@ -140,7 +150,7 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Get list of devices.
         /// </summary>
-        private IEnumerable<Device> GetDevices()
+        private IEnumerable<Device> ListDevices()
         {
             return this.Client.Devices.ListByManager(
                 this.ResourceGroupName,

@@ -147,7 +147,7 @@ namespace StorSimple8000Series.Tests
                 this.ManagerName);
 
             // validate backup job success
-            var allBackupJobs = this.GetAllJobsByType(deviceName, JobType.ManualBackup);
+            var allBackupJobs = this.GetSpecificJobsTypeByDevice(deviceName, JobType.ManualBackup);
 
             var backupJob = allBackupJobs.FirstOrDefault(
                     j =>
@@ -196,7 +196,7 @@ namespace StorSimple8000Series.Tests
             // validate restore job success
             var backupPolicy = this.Client.BackupPolicies.ListByDevice(deviceName, this.ResourceGroupName, this.ManagerName).
                 FirstOrDefault(bp => bp.Id.Equals(backup.BackupPolicyId));
-            var allRestoreJobs = this.GetAllJobsByType(deviceName, JobType.RestoreBackup);
+            var allRestoreJobs = this.GetSpecificJobsTypeByDevice(deviceName, JobType.RestoreBackup);
             var restoreJob = allRestoreJobs.FirstOrDefault(
                     j =>
                     j.StartTime > jobStartTime

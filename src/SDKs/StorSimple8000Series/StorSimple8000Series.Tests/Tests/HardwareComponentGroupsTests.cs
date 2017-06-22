@@ -27,14 +27,21 @@ namespace StorSimple8000Series.Tests
         public void TestDeviceHardwareComponents()
         {
             //checking for prerequisites
-            var devices = Helpers.CheckAndGetConfiguredDevices(this, requiredCount: 1);
-            var deviceName = devices.First().Name;
+            var device = Helpers.CheckAndGetConfiguredDevice(this, TestConstants.DefaultDeviceName);
+            var deviceName = device.Name;
 
-            //Get hardware component groups
-            var hardwareComponentGroups = GetHardwareComponentGroups(deviceName);
+            try
+            {
+                //Get hardware component groups
+                var hardwareComponentGroups = GetHardwareComponentGroups(deviceName);
 
-            //Change controller power state
-            ChangeControllerPowerState(deviceName, "Controller0Components", ControllerId.Controller0, ControllerPowerStateAction.Start);
+                //Change controller power state
+                ChangeControllerPowerState(deviceName, "Controller0Components", ControllerId.Controller0, ControllerPowerStateAction.Start);
+            }
+            catch (Exception e)
+            {
+                Assert.Null(e);
+            }
         }
 
         /// <summary>
