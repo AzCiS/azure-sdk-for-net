@@ -25,7 +25,7 @@ namespace StorSimple8000Series.Tests
         public void TestDeviceUpdates()
         {
             //checking for prerequisites
-            var device = Helpers.CheckAndGetConfiguredDevices(this, TestConstants.DefaultDeviceName);
+            var device = Helpers.CheckAndGetConfiguredDevice(this, TestConstants.DeviceForUpdateTests);
             var deviceName = device.Name;
 
             //Scan for updates

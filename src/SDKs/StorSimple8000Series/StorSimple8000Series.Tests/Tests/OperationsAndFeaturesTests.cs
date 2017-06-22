@@ -24,13 +24,24 @@ namespace StorSimple8000Series.Tests
         public OperationsAndFeaturesTests(ITestOutputHelper testOutputHelper) : base(testOutputHelper) { }
 
         [Fact]
-        public void TestOperationsAndFeaturesAPI()
+        public void TestOperationsAPI()
         {
             try
             {
-                //operations
+                //operations allowed
                 var operations = GetOperations();
+            }
+            catch (Exception e)
+            {
+                Assert.Null(e);
+            }
+        }
 
+        [Fact]
+        public void TestFeaturesAPI()
+        {
+            try
+            {
                 //features for StorSimple Manager
                 var featuresForResource = GetFeatures();
 

@@ -60,7 +60,7 @@ namespace StorSimple8000Series.Tests
             return job;
         }
 
-        public IPage<Job> GetAllJobsByType(string deviceName, JobType jobType)
+        public IPage<Job> GetSpecificJobsTypeByDevice(string deviceName, JobType jobType)
         {
             var selectedJobType = jobType.ToString();
             Expression<Func<JobFilter, bool>> filterExp = filter =>
@@ -69,6 +69,21 @@ namespace StorSimple8000Series.Tests
 
             var jobList = this.Client.Jobs.ListByDevice(
                 deviceName.GetDoubleEncoded(),
+                this.ResourceGroupName,
+                this.ManagerName,
+                jobsFilter);
+
+            return jobList;
+        }
+
+        public IPage<Job> GetSpecificJobsTypeByManager(string managerName, JobType jobType)
+        {
+            var selectedJobType = jobType.ToString();
+            Expression<Func<JobFilter, bool>> filterExp = filter =>
+                (filter.JobType == selectedJobType);
+            var jobsFilter = new ODataQuery<JobFilter>(filterExp);
+
+            var jobList = this.Client.Jobs.ListByManager(
                 this.ResourceGroupName,
                 this.ManagerName,
                 jobsFilter);

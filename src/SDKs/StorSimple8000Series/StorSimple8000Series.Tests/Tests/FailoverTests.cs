@@ -27,17 +27,16 @@ namespace StorSimple8000Series.Tests
         public void TestFailover()
         {
             //check and get pre-requisites - 2 devices, volumeContainer, volumes
-            var device1 = Helpers.CheckAndGetConfiguredDevices(this, TestConstants.DefaultDeviceName);
-            var device2 = Helpers.CheckAndGetConfiguredDevices(this, TestConstants.DeviceForFailover);
+            var device1 = Helpers.CheckAndGetConfiguredDevice(this, TestConstants.DefaultDeviceName);
+            var device2 = Helpers.CheckAndGetConfiguredDevice(this, TestConstants.DeviceForFailover);
             var sourceDeviceName = device1.Name;
             var targetDeviceName = device2.Name;
-            var volumeContainers = Helpers.CheckAndGetVolumeContainers(this, sourceDeviceName, requiredCount: 1);
-            var volumeContainerNames = volumeContainers.Select(vc => vc.Name).ToList();
+            var targetDeviceId = device2.Id;
 
             try
             {
                 // Do failover
-                Failover(sourceDeviceName, targetDeviceName, volumeContainerNames);
+                Failover(sourceDeviceName, targetDeviceName, targetDeviceId);
             }
             catch (Exception e)
             {
@@ -48,65 +47,14 @@ namespace StorSimple8000Series.Tests
         /// <summary>
         /// Helper method to trigger failover
         /// </summary>
-        private void Failover(string sourceDeviceName, string targetDeviceName, IList<string> volumeContainerNames)
+        private void Failover(string sourceDeviceName, string targetDeviceName, string targetDeviceId)
         {
+            //validate source and target device are not same
             Assert.False(sourceDeviceName.Equals(
                 targetDeviceName,
                 StringComparison.CurrentCultureIgnoreCase));
 
-            var devices = this.Client.Devices.ListByManager(
-                                this.ResourceGroupName,
-                                this.ManagerName);
-
-            Assert.NotNull(devices);
-            Assert.NotEmpty(devices);
-
-            var sourceDevice = devices.FirstOrDefault(
-                        d => d.Name.Equals(
-                            sourceDeviceName,
-                            StringComparison.CurrentCultureIgnoreCase));
-
-            Assert.NotNull(sourceDevice);
-
-            var targetDevice = devices.FirstOrDefault(
-                        d => d.Name.Equals(
-                            targetDeviceName,
-                            StringComparison.CurrentCultureIgnoreCase));
-
-            Assert.NotNull(targetDevice);
-
-            var volumeContainers = this.Client.VolumeContainers.ListByDevice(
-                                sourceDevice.Name.GetDoubleEncoded(),
-                                this.ResourceGroupName,
-                                this.ManagerName);
-
-            Assert.NotNull(volumeContainers);
-            Assert.NotEmpty(volumeContainers);
-
-            var volumeContainersToFailover = volumeContainers.Where(v =>
-                        volumeContainerNames.Contains(v.Name, new StringIgnoreCaseEqualityComparer()));
-
-            var volumeContainerIds = new List<string>();
-            foreach (var vc in volumeContainersToFailover)
-            {
-                volumeContainerIds.Add(vc.Id);
-            }
-
-            // Assert that volume containers are not already on target device
-            var volumeContainersOnTargetDevice = this.Client.VolumeContainers.ListByDevice(
-                                                targetDevice.Name.GetDoubleEncoded(),
-                                                this.ResourceGroupName,
-                                                this.ManagerName);
-
-            Assert.NotNull(volumeContainersOnTargetDevice);
-
-            var volumeContainersAlreadyOnTargetDevice = volumeContainersOnTargetDevice.Where(v =>
-                                    volumeContainerNames.Contains(v.Name, new StringIgnoreCaseEqualityComparer()));
-
-            Assert.NotNull(volumeContainersAlreadyOnTargetDevice);
-            Assert.Empty(volumeContainersAlreadyOnTargetDevice);
-
-            // Get failover sets
+            // Get failover sets from source device
             var failoverSets = this.Client.Devices.ListFailoverSets(
                 sourceDeviceName,
                 this.ResourceGroupName,
@@ -115,6 +63,9 @@ namespace StorSimple8000Series.Tests
             Assert.NotNull(failoverSets);
             Assert.NotEmpty(failoverSets);
 
+            var volumeContainerIds = failoverSets.First().VolumeContainers.Select(vc => vc.VolumeContainerId).ToList();
+            Assert.NotNull(volumeContainerIds);
+                        
             // Get failover targets
             ListFailoverTargetsRequest failoverTargetsRequest = new ListFailoverTargetsRequest()
             {
@@ -130,34 +81,34 @@ namespace StorSimple8000Series.Tests
             Assert.NotNull(failoverTargets);
             Assert.NotEmpty(failoverTargets);
 
+            //validate that target device is eligible
+            var targetDeviceIsValid = failoverTargets.FirstOrDefault(t => t.DeviceId.Equals(targetDeviceId) && t.EligibilityResult.EligibilityStatus.Equals(TargetEligibilityStatus.Eligible));
+            Assert.NotNull(targetDeviceIsValid);
+
             // Create a failover request
             FailoverRequest failoverRequest = new FailoverRequest()
             {
-                TargetDeviceId = targetDevice.Id,
+                TargetDeviceId = targetDeviceId,
                 VolumeContainers = volumeContainerIds
             };
 
+            var jobStartTime = new DateTime(2017, 06, 21);
+
             // Trigger failover
             this.Client.Devices.Failover(
-                                sourceDevice.Name.GetDoubleEncoded(),
+                                sourceDeviceName.GetDoubleEncoded(),
                                 failoverRequest,
                                 this.ResourceGroupName,
                                 this.ManagerName);
 
-            // Query volume containers from target device after failover
-            var volumeContainersAfterFailover = this.Client.VolumeContainers.ListByDevice(
-                                 targetDevice.Name.GetDoubleEncoded(),
-                                 this.ResourceGroupName,
-                                 this.ManagerName);
+            //validate
+            var allFailoverJobs = GetSpecificJobsTypeByManager(this.ManagerName, JobType.FailoverVolumeContainers);
 
-            Assert.NotNull(volumeContainersAfterFailover);
+            var failoverJob = allFailoverJobs.FirstOrDefault(
+                j => j.StartTime > jobStartTime &&
+                j.EntityLabel.Equals(sourceDeviceName, StringComparison.CurrentCultureIgnoreCase));
 
-            // Assuming the volume container names are the same on the target device
-            var failedOverVolumeContainers = volumeContainersAfterFailover.Where(v =>
-                                    volumeContainerNames.Contains(v.Name, new StringIgnoreCaseEqualityComparer()));
-
-            Assert.NotNull(failedOverVolumeContainers);
-            Assert.NotEmpty(failedOverVolumeContainers);
+            Assert.True(failoverJob != null && failoverJob.Status.Equals(JobStatus.Succeeded), "Failover was not successful.");
         }
     }
 }
