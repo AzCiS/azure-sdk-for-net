@@ -102,7 +102,7 @@ namespace StorSimple8000Series.Tests
         public void TestConfigureCloudAppliance()
         {
             //checking for prerequisites
-            var device = Helpers.CheckAndGetConfiguredDevice(this, DeviceType.Series8000VirtualAppliance, DeviceStatus.ReadyToSetup);
+            var device = Helpers.CheckAndGetDevice(this, DeviceType.Series8000VirtualAppliance, DeviceStatus.ReadyToSetup);
             var deviceName = device.Name;
 
             //the service data encryption key from rollovered device
@@ -111,8 +111,8 @@ namespace StorSimple8000Series.Tests
             try
             {
                 // Device admin password and snapshot manager password
-                AsymmetricEncryptedSecret deviceAdminpassword = this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "test-secret");
-                AsymmetricEncryptedSecret snapshotmanagerPassword = this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "test-secret1");
+                AsymmetricEncryptedSecret deviceAdminpassword = this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "test-adminp13");
+                AsymmetricEncryptedSecret snapshotmanagerPassword = this.Client.Managers.GetAsymmetricEncryptedSecret(this.ResourceGroupName, this.ManagerName, "test-ssmpas1235");
 
                 //cloud appliance settings
                 CloudApplianceSettings cloudApplianceSettings = new CloudApplianceSettings();
@@ -157,7 +157,7 @@ namespace StorSimple8000Series.Tests
         public void TestUpdateServiceDataEncryptionKeyOnCloudAppliance()
         {
             //checking for prerequisites
-            var device = Helpers.CheckAndGetConfiguredDevice(this, DeviceType.Series8000VirtualAppliance);
+            var device = Helpers.CheckAndGetDevice(this, DeviceType.Series8000VirtualAppliance);
             var deviceName = device.Name;
 
             //the new service data encryption key from rollovered device

@@ -92,7 +92,7 @@ namespace StorSimple8000Series.Tests
             return device;
         }
 
-        public static Device CheckAndGetConfiguredDevice(StorSimpleTestBase testBase, DeviceType deviceType, DeviceStatus deviceStatus = DeviceStatus.Online)
+        public static Device CheckAndGetDevice(StorSimpleTestBase testBase, DeviceType deviceType, DeviceStatus deviceStatus = DeviceStatus.Online)
         {
             var devices = testBase.Client.Devices.ListByManager(testBase.ResourceGroupName, testBase.ManagerName);
 
