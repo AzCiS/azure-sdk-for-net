@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('AzSdk.reference.props'))" />
+  <PropertyGroup>
+    <PackageId>Microsoft.Azure.Management.DataBox</PackageId>
+    <Description>Microsoft Azure Management DataBox library</Description>
+    <AssemblyName>Microsoft.Azure.Management.DataBox</AssemblyName>
+    <Version>0.0.4-preview</Version>
+    <PackageTags>Microsoft Azure DataBox management;DataBox;DataBox;DataBox management</PackageTags>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetFrameworks>net452;netstandard1.4</TargetFrameworks>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Text.Encoding" Version="4.3.0" />
+  </ItemGroup>
+</Project>
